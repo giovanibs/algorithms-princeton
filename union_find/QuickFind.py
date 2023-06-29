@@ -1,4 +1,4 @@
-from union_find.QuickUnion import QuickUnion
+from QuickUnion import QuickUnion
 
 class QuickFind(QuickUnion):
     '''

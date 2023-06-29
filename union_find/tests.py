@@ -1,7 +1,7 @@
 import unittest
-from union_find.QuickUnion import QuickUnion
+from QuickUnion import QuickUnion
 from QuickFind import QuickFind
-
+from WeightedQuickUnion import WeightedQuickUnionSize, WeightedQuickUnionHeight
 
 class TestQuickUnion(unittest.TestCase):
     def test_valid_object_creation(self):
@@ -91,8 +91,60 @@ class TestQuickFind(TestQuickUnion):
         self.assertEqual(qf.find(1), qf.find(2))
         self.assertEqual(qf.find(0), 2)
         
-        
 
+class TestWeightedQuickUnionSize(TestQuickUnion):
+    def test_size_init(self):
+        n = 3
+        uf = WeightedQuickUnionSize(n)
+        
+        for size in uf.size:
+            self.assertEqual(size, 1)
+        
+    def test_size(self):
+        n = 5
+        uf = WeightedQuickUnionSize(n)
+        uf.union(0, 1)
+        self.assertEqual(uf.size[0], 2)
+        uf.union(2, 0)
+        self.assertEqual(uf.size[0], 3)
+        uf.union(3, 4)
+        self.assertEqual(uf.size[3], 2)
+        uf.union(3, 0)
+        self.assertEqual(uf.size[0], 5)
+
+        
+class TestWeightedQuickUnionHeight(TestQuickUnion):
+    def test_height_init(self):
+        n = 3
+        uf = WeightedQuickUnionHeight(n)
+        
+        for height in uf.height:
+            self.assertEqual(height, 0)
+        
+    def test_same_height(self):
+        n = 2
+        uf = WeightedQuickUnionHeight(n)
+        uf.union(0, 1)
+        self.assertEqual(uf.height[0], 1)
+    
+    def test_different_height(self):
+        n = 9
+        uf = WeightedQuickUnionHeight(n)
+        uf.union(0, 1)
+        self.assertEqual(uf.height[uf.find(0)], 1)
+        uf.union(1, 2)
+        self.assertEqual(uf.height[uf.find(0)], 1)
+        uf.union(3, 4)
+        uf.union(4, 0)
+        self.assertEqual(uf.height[uf.find(0)], 2)
+        uf.union(5, 6)
+        uf.union(7, 8)
+        uf.union(8, 5)
+        self.assertEqual(uf.height[uf.find(5)], 2)
+        uf.union(5, 0)
+        self.assertEqual(uf.height[uf.find(5)], 3)
+        self.assertEqual(max(uf.height), 3)
+        
 
 if __name__ == "__main__":
     unittest.main()

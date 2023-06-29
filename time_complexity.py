@@ -1,5 +1,5 @@
 import big_o
-from union_find.UnionFind import UnionFind
+from union_find.QuickUnion import QuickUnion
 
 # cases to evaluate
 tinyUF = '../tests/tinyUF.txt'
@@ -18,7 +18,7 @@ def uf_generator(source_file):
 generator = uf_generator(tinyUF)
 n = next(generator)
 print(f'{n=}')
-uf = UnionFind(n) # 1st line is the constructor argument 
+uf = QuickUnion(n) # 1st line is the constructor argument 
  
-best, others = big_o.big_o(UnionFind.union, uf_generator, n_repeats=100)
+best, others = big_o.big_o(QuickUnion.union, uf_generator, n_repeats=100)
 print(best)

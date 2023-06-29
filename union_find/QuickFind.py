@@ -1,6 +1,6 @@
-from UnionFind import UnionFind
+from union_find.QuickUnion import QuickUnion
 
-class QuickFind(UnionFind):
+class QuickFind(QuickUnion):
     '''
     '''
     def union(self, element1: int, element2: int) -> int:

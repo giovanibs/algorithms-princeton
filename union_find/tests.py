@@ -1,32 +1,32 @@
 import unittest
-from UnionFind import UnionFind
+from union_find.QuickUnion import QuickUnion
 from QuickFind import QuickFind
 
 
-class TestUnionFind(unittest.TestCase):
+class TestQuickUnion(unittest.TestCase):
     def test_valid_object_creation(self):
         n = 3
-        uf = UnionFind(3)
+        uf = QuickUnion(3)
         self.assertEqual(uf.sets_count, n)
 
     def test_invalid_object_creation(self):
         negative_n = -1
         zero_n = 0
         with self.assertRaises(ValueError):
-            UnionFind(negative_n)
+            QuickUnion(negative_n)
         with self.assertRaises(ValueError):
-            UnionFind(zero_n)
+            QuickUnion(zero_n)
 
     def test_find(self):
         n = 3
-        uf = UnionFind(n)
+        uf = QuickUnion(n)
 
         for element in range(3):
             self.assertEqual(uf.find(element), element)
 
     def test_find_argument_not_in_range(self):
         n = 3
-        uf = UnionFind(n)
+        uf = QuickUnion(n)
 
         with self.assertRaises(IndexError):
             uf.find(-n)
@@ -35,7 +35,7 @@ class TestUnionFind(unittest.TestCase):
 
     def test_union(self):
         n = 3
-        uf = UnionFind(n)
+        uf = QuickUnion(n)
 
         # store return value to test
         sets_count = uf.union(0, 1)
@@ -49,7 +49,7 @@ class TestUnionFind(unittest.TestCase):
 
     def test_union_argument_not_in_range(self):
         n = 3
-        uf = UnionFind(n)
+        uf = QuickUnion(n)
 
         with self.assertRaises(IndexError):
             uf.union(0, -n)
@@ -58,7 +58,7 @@ class TestUnionFind(unittest.TestCase):
 
     def test_relation_transitive(self):
         n = 3
-        uf = UnionFind(n)
+        uf = QuickUnion(n)
 
         union_operations = [
             (0, 1),
@@ -71,7 +71,7 @@ class TestUnionFind(unittest.TestCase):
         self.assertTrue(uf.are_connected(1, 2))
 
 
-class TestQuickFind(TestUnionFind):
+class TestQuickFind(TestQuickUnion):
     def test_union(self):
         n = 3
         qf = QuickFind(n)

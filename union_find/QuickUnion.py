@@ -1,4 +1,4 @@
-class UnionFind:
+class QuickUnion:
     """
     This class represents a very simple union-find (or disjoint-sets)
     data structure (without improvements).
@@ -20,7 +20,7 @@ class UnionFind:
 
     def __repr__(self):
         return (
-            f"UnionFind (n = {len(self.parent)}):"
+            f"QuickUnion (n = {len(self.parent)}):"
             + f"\n\t{self.parent = }\n\t{self.sets_count = }"
         )
 
@@ -32,8 +32,6 @@ class UnionFind:
         Add a connection between the two elements, i.e. merge the
         set containing `element1` with the set containing `element2`.
         """
-        self.validate_element_index(element1, element2)
-
         root1 = self.find(element1)
         root2 = self.find(element2)
 

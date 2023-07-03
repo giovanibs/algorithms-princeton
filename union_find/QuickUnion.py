@@ -4,11 +4,11 @@ class QuickUnion:
     data structure (without improvements).
 
     The union-find data type models a collection of sets
-    containing `n` elements, named `0` through `n-1`.
+    containing `n` nodes, named `0` through `n-1`.
 
-    The value of the element represents its parent element. When
-    the parent is the element itself, it is nominated the
-    canonical / root / identifier / leader element of its set.
+    The value of the node represents its parent node. When
+    the parent is the node itself, it is nominated the
+    canonical / root / identifier / leader node of its set.
     """
 
     def __init__(self, n: int):
@@ -27,13 +27,13 @@ class QuickUnion:
     def __str__(self):
         return str(self.parent)
 
-    def union(self, element1: int, element2: int) -> int:
+    def union(self, node1: int, node2: int) -> int:
         """
-        Add a connection between the two elements, i.e. merge the
-        set containing `element1` with the set containing `element2`.
+        Add a connection between the two nodes, i.e. merge the
+        set containing `node1` with the set containing `node2`.
         """
-        root1 = self.find(element1)
-        root2 = self.find(element2)
+        root1 = self.find(node1)
+        root2 = self.find(node2)
 
         if root1 != root2:
             self.parent[root1] = root2
@@ -41,27 +41,27 @@ class QuickUnion:
 
         return self.sets_count
 
-    def find(self, element: int) -> int:
+    def find(self, node: int) -> int:
         """
-        Returns the root/canonical element of the set containing `element`.
+        Returns the root/canonical node of the set containing `node`.
         """
-        self.validate_element_index(element)
+        self.validate_node_index(node)
 
-        while element != self.parent[element]:
-            element = self.parent[self.parent[element]]  # path compression
-        return element
+        while node != self.parent[node]:
+            node = self.parent[self.parent[node]]  # search path compression
+        return node
 
-    def are_connected(self, element1: int, element2: int) -> bool:
+    def are_connected(self, node1: int, node2: int) -> bool:
         """
-        Return `True` iff both elements are in the same set
-        (i.e. both elements have the same root element).
+        Return `True` iff both nodes are in the same set
+        (i.e. both nodes have the same root node).
         """
-        self.validate_element_index(element1, element2)
-        return self.find(element1) == self.find(element2)
+        self.validate_node_index(node1, node2)
+        return self.find(node1) == self.find(node2)
 
-    def validate_element_index(self, *elements):
-        for element in elements:
-            if element < 0 or element > len(self.parent):
+    def validate_node_index(self, *nodes):
+        for node in nodes:
+            if node < 0 or node > len(self.parent):
                 raise IndexError(
-                    f"The element [{element}] does not belong to this object."
+                    f"The node [{node}] does not belong to this object."
                 )

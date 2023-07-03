@@ -3,16 +3,16 @@ from QuickUnion import QuickUnion
 class QuickFind(QuickUnion):
     '''
     '''
-    def union(self, element1: int, element2: int) -> int:
-        self.validate_element_index(element1, element2)
+    def union(self, node1: int, node2: int) -> int:
+        self.validate_node_index(node1, node2)
         
-        root1 = self.find(element1)
-        root2 = self.find(element2)
+        root1 = self.find(node1)
+        root2 = self.find(node2)
         
         if root1 != root2:
-            for element in self.parent:
-                if self.find(element) == root1:
-                    self.parent[element] = root2
+            for node in self.parent:
+                if self.find(node) == root1:
+                    self.parent[node] = root2
                     
             self.sets_count -= 1
             

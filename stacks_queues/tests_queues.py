@@ -1,4 +1,4 @@
-from queues import Queue
+from queues import Queue, LinkedListQueue
 import unittest
 
 class QueueTests(unittest.TestCase):
@@ -41,7 +41,11 @@ class QueueTests(unittest.TestCase):
         
         while not self.q.is_empty():
             self.q.dequeue()
-        self.assertTrue(self.q.is_empty())
+        self.assertIsNone(self.queue.dequeue())
 
+class LinkedListQueueTests(QueueTests):
+    def setUp(self):
+        self.queue = LinkedListQueue()
+    
 if __name__ == "__main__":
     unittest.main()

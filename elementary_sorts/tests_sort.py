@@ -1,6 +1,7 @@
 import unittest
 import random
 from selection_sort import SelectionSort
+from InsertionSort import InsertionSort
 
 class TestSelectionSort(unittest.TestCase):
     def setUp(self) -> None:
@@ -21,6 +22,11 @@ class TestSelectionSort(unittest.TestCase):
         random.shuffle(array)
         self.sorter.sort(array)
         self.assertEqual(array, sorted(array))
+        
+class TestInsertionSort(TestSelectionSort):
+    def setUp(self) -> None:
+        self.sorter = InsertionSort()
+    
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,12 +1,9 @@
-import math
-
-
 class ShellSort:
     """
     This code implements the Shell sort algorithm,
     which is an extension of the insertion sort algorithm
     
-    The algorithm uses a sequence of gap sizes to perform
+    The algorithm uses a sequence of `gap` sizes to perform
     multiple steps over the array. It starts with the largest
     `gap` size and gradually reduces the `gap` until it reaches `1`
     and the array is fully sorted.
@@ -21,13 +18,7 @@ class ShellSort:
         
         n = len(array)
         
-        gap = 1
-        
-        # Generate the gap sequence using the Knuth's formula
-        gap_sequence = []
-        while gap < n//3:
-            gap_sequence.append(gap)
-            gap = 3*gap + 1
+        gap_sequence = self.knuths_sequence(n)
             
         # Iterate over the gap sequence, starting from the largest value
         for gap in gap_sequence[::-1]:
@@ -36,7 +27,18 @@ class ShellSort:
             for i in range(gap, n):
                 for j in range(i, 0, -gap):
                     
-                    # Compare adjacent elements and
-                    # swap them if they are in the wrong order
+                    # swap elements if they are in the wrong order
                     if array[j] < array[j-gap]:
                         array[j], array[j-gap] = array[j-gap], array[j]
+
+    def knuths_sequence(self, n: int) -> list:
+        """
+        Generates a gap sequence using the Knuth's formula:
+            `gap = 3*gap + 1`
+        """
+        gap = 1
+        gap_sequence = []
+        while gap < n//3:
+            gap_sequence.append(gap)
+            gap = 3*gap + 1
+        return gap_sequence

@@ -2,13 +2,15 @@ import unittest
 import random
 from selection_sort import SelectionSort
 from InsertionSort import InsertionSort
+from ShellSort import ShellSort
 
 class TestSelectionSort(unittest.TestCase):
     def setUp(self) -> None:
         self.sorter = SelectionSort()
     
     def test_sort_int(self):
-        array = [2, 5, 0, 4, 1, 3]
+        array = list(range(16))
+        random.shuffle(array)
         self.sorter.sort(array)
         self.assertEqual(array, sorted(array))
     
@@ -26,6 +28,10 @@ class TestSelectionSort(unittest.TestCase):
 class TestInsertionSort(TestSelectionSort):
     def setUp(self) -> None:
         self.sorter = InsertionSort()
+    
+class TestShellSort(TestSelectionSort):
+    def setUp(self) -> None:
+        self.sorter = ShellSort()
     
 
 if __name__ == "__main__":

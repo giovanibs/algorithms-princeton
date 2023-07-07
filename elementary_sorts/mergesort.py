@@ -23,6 +23,10 @@ class MergeSort:
         of `a` with the remaining items of the remaining subarray
         """
 
+        # assert that both subarrays are already sorted
+        assert a[lo:mid] == sorted(a[lo:mid]), "Left subarray not sorted!"
+        assert a[mid:hi] == sorted(a[mid:hi]), "Right subarray not sorted!"
+
         # auxiliary array
         aux = a.copy()
         left, right = lo, mid

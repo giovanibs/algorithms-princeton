@@ -5,6 +5,39 @@ class TestMergeSort(TestCase):
     def setUp(self) -> None:
         self.mergesort = MergeSort()
     
+    
+    def test_unsorted_subarrays(self):
+        
+        # unsorted left
+        a = [1, 0, 2, 3, 4, 5]
+        n = len(a)
+        lo = 0
+        mid = n//2
+        hi = n
+        
+        with self.assertRaises(AssertionError):
+            self.mergesort.merge(a, lo, mid, hi)
+            
+        # unsorted right
+        a = [0, 1, 2, 3, 5, 4]
+        n = len(a)
+        lo = 0
+        mid = n//2
+        hi = n
+        
+        with self.assertRaises(AssertionError):
+            self.mergesort.merge(a, lo, mid, hi)
+        
+        # both unsorted
+        a = [0, 2, 1, 3, 5, 4]
+        n = len(a)
+        lo = 0
+        mid = n//2
+        hi = n
+        
+        with self.assertRaises(AssertionError):
+            self.mergesort.merge(a, lo, mid, hi)
+        
     def test_merge_edge_cases(self):
         
         a = [] # empty list

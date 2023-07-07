@@ -15,14 +15,14 @@ class MergeSort:
         self._sort(a, lo=0, hi=n)
 
     def _sort(self, a, lo, hi) -> None:
-        # 1) Base case: If the subarray size is 0 or 1,
-        # it is already sorted.
+        # 1) Base case: If the subarray size is 0 or 1, it is already sorted.
         if (hi - lo) <= 1:
             return
 
         # 2) Recursive step:
-        #   2.1) compute mid = (hi + lo)//2
-        mid = (lo + hi) // 2
+        #   2.1) compute mid = lo + (hi - lo) // 2
+        # obs.: the expression above helps avoiding integer overflow.
+        mid = lo + (hi - lo) // 2
 
         #   2.2) sort (recursively) the two subarrays
         self._sort(a, lo=lo, hi=mid)  # a[lo:mid)

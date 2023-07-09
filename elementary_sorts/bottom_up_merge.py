@@ -13,11 +13,11 @@ class BottomUpMerge(MergeSort):
             # array is sorted
             return
         
-        for size in self.doubling_range(1, n):      # n == 7 | size == 1   
-                                                    #       
-            for lo in range(0, n-size, 2*size):     # lo    0   2   4   6
-                hi = min(lo + 2*size, n-1)          # hi    2   4   6   6
-                mid = lo + (hi - lo)//2             # mid   1   3   5   6
+        for size in self.doubling_range(1, n):
+            
+            for lo in range(0, n-size, 2*size):
+                hi = min(lo + 2*size, n)
+                mid = lo + size
                 
                 self.merge(a, lo=lo, mid=mid, hi=hi)
     
@@ -36,14 +36,26 @@ class BottomUpMerge(MergeSort):
 import unittest
 from tests_mergesort import TestMergeSort
 
-class BottomUpMergeTests(TestMergeSort):
+class TestsBottomUpMerge(TestMergeSort):
     def setUp(self) -> None:
         self.mergesort = BottomUpMerge()
     
-    def test_sort(self):
-        a = [4, 6, 5, 3]
+    def test_bot_up_sort(self):
+        a = [1, 0]
         self.mergesort.sort(a)
-        self.assertEqual(a, [3, 4, 5, 6])
-
+        self.assertEqual(a, [0, 1])
+        
+        a = [1, 2, 0]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [0, 1, 2])
+        
+        a = [0, 1, 2]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [0, 1, 2])
+        
+        a = [2, 1, 0]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [0, 1, 2])
+        
 if __name__ == "__main__":
     unittest.main()

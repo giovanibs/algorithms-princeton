@@ -227,7 +227,7 @@ from random import shuffle
 
 class TestMergeSort(unittest.TestCase):
     def setUp(self) -> None:
-        self.mergesort = MergeSort
+        self.sorter = MergeSort
         
     def test_merge(self):
         a = [1, 0]
@@ -235,7 +235,7 @@ class TestMergeSort(unittest.TestCase):
         lo = 0
         hi = len(a) # 2
         mid = lo + (hi-lo)//2 # 1
-        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.sorter._merge(a, lo, mid, hi, aux)
         self.assertEqual(a, [0, 1])
         
         a = [2, 0, 1]
@@ -243,7 +243,7 @@ class TestMergeSort(unittest.TestCase):
         lo = 0
         hi = len(a)
         mid = lo + (hi-lo)//2
-        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.sorter._merge(a, lo, mid, hi, aux)
         self.assertEqual(a, [0, 1, 2])
         
         a = [0, 1, 2]
@@ -251,7 +251,7 @@ class TestMergeSort(unittest.TestCase):
         lo = 0
         hi = len(a)
         mid = lo + (hi-lo)//2
-        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.sorter._merge(a, lo, mid, hi, aux)
         self.assertEqual(a, [0, 1, 2])
         
         a = [2, 0, 1]
@@ -259,7 +259,7 @@ class TestMergeSort(unittest.TestCase):
         lo = 0
         hi = len(a)
         mid = lo + (hi-lo)//2
-        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.sorter._merge(a, lo, mid, hi, aux)
         self.assertEqual(a, [0, 1, 2])
         
         a = [2, 0, 1, 5, 6, 3, 4]
@@ -267,7 +267,7 @@ class TestMergeSort(unittest.TestCase):
         lo = 3
         hi = 7
         mid = lo + (hi-lo)//2
-        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.sorter._merge(a, lo, mid, hi, aux)
         self.assertEqual(a, [2, 0, 1, 3, 4, 5, 6])
         
         with self.assertRaises(AssertionError):
@@ -276,7 +276,7 @@ class TestMergeSort(unittest.TestCase):
             lo = 0
             hi = len(a)
             mid = lo + (hi-lo)//2
-            self.mergesort._merge(a, lo, mid, hi, aux)
+            self.sorter._merge(a, lo, mid, hi, aux)
         
         with self.assertRaises(AssertionError):
             a = [0, 1, 3, 2]
@@ -284,48 +284,97 @@ class TestMergeSort(unittest.TestCase):
             lo = 0
             hi = len(a)
             mid = lo + (hi-lo)//2
-            self.mergesort._merge(a, lo, mid, hi, aux)
+            self.sorter._merge(a, lo, mid, hi, aux)
     
     def test_edge_cases(self):
         # a is empy
         a = []
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, [])
 
         # a has 1 element
         a = [1]
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, [1])
 
         # a is already sorted
         a = ['a', 'b', 'c', 'd', 'e']
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
 
         # a is reversely sorted
         a = ['e', 'd', 'c', 'b', 'a']
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
 
     def test_merge_and_sort(self):
         a = [1,0]
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, [0, 1])
 
         a = [2_000, 30, 100]
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, [30, 100, 2_000])
 
         a = ['c', 'b', 'e', 'd', 'a']
-        self.mergesort.sort(a)
+        self.sorter.sort(a)
         self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
 
     def test_mergesort_random_cases(self):
         for n in range(1_000):
             sorted_a = list(range(n))
             shuffle(a := sorted_a[:])
-            self.mergesort.sort(a)
+            self.sorter.sort(a)
             self.assertEqual(a, sorted_a)
+
+
+# # # # # # # # # # # # 
+#   BOTTOM-UP MERGE   #
+# # # # # # # # # # # #
+
+class BottomUpMerge(MergeSort): # we`re gonna re-use the merge method
+    """
+    Overall steps:
+    
+    1) Start merging subarrays of length `1`
+    2) subsequentally doubles the length of the subarrays and keep merging 
+    """
+    
+    @staticmethod
+    def sort(a):
+        n = len(a)
+        
+        if n <= 1: # array is sorted
+            return
+        
+        doubling_range = BottomUpMerge.doubling_range(1, n)
+        
+        for step in doubling_range:
+            aux = a[:]
+            
+            for lo in range(0, n-step, 2*step):
+                hi = min(lo + 2*step, n) # is overflow a possibility?
+                mid = lo + step
+                BottomUpMerge._merge(a, lo, mid, hi, aux)
+    
+    @staticmethod
+    def _sort():
+        pass
+    
+    @staticmethod
+    def doubling_range(start, stop):
+        """
+        Aux method to generate a doubling range from `start` to `stop`
+        """
+        i = start
+        while i < stop:
+            yield i
+            i *= 2
+
+class TestBottomUpMerge(TestMergeSort):
+    def setUp(self) -> None:
+        self.sorter = BottomUpMerge
+
 
 if __name__ == "__main__":
     unittest.main()

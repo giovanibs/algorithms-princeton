@@ -4,7 +4,7 @@
 class SelectionSort:
     """
     For each index in the given `array` with length `n`:
-    1) SELECTS the smallest item from `index` to the end of the array (`n-1`).
+    1) SELECTS the smallest item in `array[index, n)`.
     2) swaps the found item with the item in the `index` position.
     """
     
@@ -35,11 +35,22 @@ class TestSelection(TestSelectionSort):
 # # # # # # # # # # # #
 class InsertionSort:
     """
-    For each `item` and its `index` in a given `array` with length `n`:
-    1) Loops through the subarray `array[:index]`,
-        starting from the right most item
-    2) Subsequentially compares the current `item` with each item to its left
-    3) Swaps the items if they are out of order
+        Insertion sort creates a sorted subarray that subsequentially
+    increases in length to add a new item. The new item is compared and swaped,
+    from right to left, with each other item until it finds its place in the
+    sorted subarray.
+    
+        In other words, for each `item` and its `index` in a given `array` with
+    length `n` (starting from the second item a.k.a. `index == 1`):
+    
+    1) Loops through the subarray `array[0, index+1)`, starting from
+    the RIGHT most item, ie. `array[index]`.
+    
+    2) Subsequentially compares the current `item` with each item to its
+    left:
+            - `array[index]` < `array[index-1]` ?
+    
+    3) Swaps the items if they are out of order. Increment `index` otherwise.
     """
     
     def sort(self, array):
@@ -66,41 +77,34 @@ class TestInsertion(TestInsertionSort):
 # # # # # # # # # # # #
 class ShellSort:
     """
-    Shell sort is an extension of the insertion sort,
-    or rather it's a generalization.
+        Shell sort is an extension of the insertion sort, or rather it's a
+    generalization. Basically, instead of doing the following comparison:
     
-    It uses a sequence of `gap` sizes and, for each `gap`,
-    starting from the greatest:
-    
-    1) Defines virtual subarrays with the indices of the `array` items
-    distanced by the current `gap` size.
-    ```
-        array = [3, 1, 2]
-        gap_sequence = [1]
-        subarray = [1, 2]
-    ```
-    
-    2) Performs an insertion sort in the virtual subarray.
-    For each `item` and its `index` in a given `array` with length `n`:
-    
-            - Loops through the subarray `array[:index]`, starting from the right most item
-            - Subsequentially compares the current `item` with each item to its left
+            - `array[index]` < `array[index-1]` ?
             
-            - Swaps the items if they are out of order
-            
-            ```
-            index == 2 -> array[index] == 2
-            array[index-gap] == 1 < array[index] -> don't swap
-            array == [3, 1, 2]
-            array[index-gap] == 3 > array[index] -> swap
-            array == [2, 1, 3]
-            
-            index == 1 -> array[index] == 1
-            array[index-gap] == 2 > array[index] -> swap
-            array == [1, 2, 3]
-            ```
+    it does the following:
     
-    When `gap` reaches `1`, it performs a insertion sort in the whole `array`.
+            - `array[index]` < `array[index-gap]` ?
+    
+        That means that the subarrays are now defined by sampling items that
+    are `gap`-indices apart, where `gap` is part of a sequence of sizes,
+    having at least the size `1` -- eg. `gap_sequence = [1, 2, 4, 8]` -- and
+    starting from the greatest gap, ie `gap_sequence[-1]`.
+        
+        When `gap` reaches `1`, it is like performing an insertion sort in the
+    whole `array`. But, at this point, small items have already been moved from
+    long distances during the iteration with larger gap sizes, thus reducing
+    the number of compares and swaps.
+    
+    In other words:
+    
+    - Iterates over a reversed sequence of `gap` sizes and, the last being `1`.
+    For each `gap`:
+        - Iterates over the subarray `array[gap, n)`. For each index `i`:
+            - Performs an insertion sort on the items distanced by the current
+            `gap` size, starting from `array[i]` (aka the right most item) to
+            `array[gap]`. That is, compares `array[i]` to `array[i-gap]` and
+            swap them if they're out of order.
     """
     
     def sort(self, array):
@@ -110,22 +114,13 @@ class ShellSort:
 
         for gap in gap_sequence[::-1]:
             
+            # now comes the insertion sort
             for rightmost in range(gap, n):
-                subarray = self.virtual_subarray(array[:rightmost+1], gap)
-            
-                for index in subarray[::-1]:
+                # `gap-1` bc it's exclusive (could be `zero` with no prejudice)
+                for index in range(rightmost, gap-1, -gap):
                     if array[index] < array[index - gap]:
                         self.swap_items(array, index, index-gap)
 
-    def virtual_subarray(self, array, gap):
-        """
-        Returns a virtual subarray of a length n `array`
-        with indices for every `gap`-th item
-        """
-        n = len(array)
-        subarray = list(range(gap, n, gap))
-        return subarray
-                    
     def swap_items(self, array, index1, index2) -> None:
         array[index1], array[index2] = \
                 array[index2], array[index1]

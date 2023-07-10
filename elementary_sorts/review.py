@@ -147,3 +147,185 @@ from tests_sort import TestShellSort
 class TestShell(TestShellSort):
     def setUp(self) -> None:
         self.sorter = ShellSort()
+        
+        
+# # # # # # # # # # # # 
+#   MERGE SORT        #
+# # # # # # # # # # # #
+
+class MergeSort:
+    """
+    Overall steps:
+    
+    1) Find `mid`
+    2) Divide `a` into two subarrays and recursively sort them
+            - a[lo:mid)
+            - a[mid:hi)
+    3) Merge them
+    """
+    @staticmethod
+    def sort(a):
+        n = len(a)
+        MergeSort._sort(a, 0, n)
+        
+    @staticmethod
+    def _sort(a, lo, hi):
+        
+        if (hi - lo) <= 1: # subarray is sorted
+            return
+        
+        # 1) Find `mid`
+        mid = lo + ( hi - lo )//2       # reduces chance of int overflow
+        
+        # 2) Divide `a` into two subarrays and recursively sort them:
+        MergeSort._sort(a, lo, mid)     # left_subarray  == a[lo:mid)
+        MergeSort._sort(a, mid, hi)     # right_subarray == a[mid:hi)
+        
+        # 3) Merge them
+        aux = a[:]  # auxiliary array for merging
+        MergeSort._merge(a, lo, mid, hi, aux)
+            
+    @staticmethod
+    def _merge(a, lo, mid, hi, aux):
+        """
+        Merge two sorted subarrays of `a`:
+            - `a[lo, mid)` and `a[mid, hi)`
+        
+        Steps:
+        1) initiate 3 pointers:
+                - `merged`: pointer to update values in `a`
+                - `left`:   pointer to loop the left subarray (aux array)
+                - `right`:  pointer to loop the left subarray (aux array)
+        2) for each `a[merged]`:
+                - `a[merged]` <- smallest between `aux[left]` and `aux[right]`
+                - increment the index of the selected (left or right)
+        """
+        assert a[lo:mid] == sorted(a[lo:mid]), "Left subarray is not sorted!"
+        assert a[mid:hi] == sorted(a[mid:hi]), "Right subarray is not sorted!"
+        
+        left  = lo
+        right = mid
+        
+        # loop `a` with `merged` as index
+        for merged in range(lo, hi):
+            
+            if (left == mid) or (right == hi):
+                # one of the subarrays is exhausted
+                a[merged:hi] = aux[left:mid] or aux[right:hi]
+                break
+            
+            elif aux[left] <= aux[right]:
+                a[merged] = aux[left]
+                left += 1
+        
+            elif aux[right] < aux[left]:
+                a[merged] = aux[right]
+                right += 1
+        
+import unittest
+from random import shuffle
+
+class TestMergeSort(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mergesort = MergeSort
+        
+    def test_merge(self):
+        a = [1, 0]
+        aux = a[:]
+        lo = 0
+        hi = len(a) # 2
+        mid = lo + (hi-lo)//2 # 1
+        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.assertEqual(a, [0, 1])
+        
+        a = [2, 0, 1]
+        aux = a[:]
+        lo = 0
+        hi = len(a)
+        mid = lo + (hi-lo)//2
+        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.assertEqual(a, [0, 1, 2])
+        
+        a = [0, 1, 2]
+        aux = a[:]
+        lo = 0
+        hi = len(a)
+        mid = lo + (hi-lo)//2
+        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.assertEqual(a, [0, 1, 2])
+        
+        a = [2, 0, 1]
+        aux = a[:]
+        lo = 0
+        hi = len(a)
+        mid = lo + (hi-lo)//2
+        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.assertEqual(a, [0, 1, 2])
+        
+        a = [2, 0, 1, 5, 6, 3, 4]
+        aux = a[:]
+        lo = 3
+        hi = 7
+        mid = lo + (hi-lo)//2
+        self.mergesort._merge(a, lo, mid, hi, aux)
+        self.assertEqual(a, [2, 0, 1, 3, 4, 5, 6])
+        
+        with self.assertRaises(AssertionError):
+            a = [2, 1, 0]
+            aux = a[:]
+            lo = 0
+            hi = len(a)
+            mid = lo + (hi-lo)//2
+            self.mergesort._merge(a, lo, mid, hi, aux)
+        
+        with self.assertRaises(AssertionError):
+            a = [0, 1, 3, 2]
+            aux = a[:]
+            lo = 0
+            hi = len(a)
+            mid = lo + (hi-lo)//2
+            self.mergesort._merge(a, lo, mid, hi, aux)
+    
+    def test_edge_cases(self):
+        # a is empy
+        a = []
+        self.mergesort.sort(a)
+        self.assertEqual(a, [])
+
+        # a has 1 element
+        a = [1]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [1])
+
+        # a is already sorted
+        a = ['a', 'b', 'c', 'd', 'e']
+        self.mergesort.sort(a)
+        self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
+
+        # a is reversely sorted
+        a = ['e', 'd', 'c', 'b', 'a']
+        self.mergesort.sort(a)
+        self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
+
+    def test_merge_and_sort(self):
+        a = [1,0]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [0, 1])
+
+        a = [2_000, 30, 100]
+        self.mergesort.sort(a)
+        self.assertEqual(a, [30, 100, 2_000])
+
+        a = ['c', 'b', 'e', 'd', 'a']
+        self.mergesort.sort(a)
+        self.assertEqual(a, ['a', 'b', 'c', 'd', 'e'])
+
+    def test_mergesort_random_cases(self):
+        for n in range(1_000):
+            sorted_a = list(range(n))
+            shuffle(a := sorted_a[:])
+            self.mergesort.sort(a)
+            self.assertEqual(a, sorted_a)
+
+if __name__ == "__main__":
+    unittest.main()

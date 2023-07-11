@@ -376,5 +376,158 @@ class TestBottomUpMerge(TestMergeSort):
         self.sorter = BottomUpMerge
 
 
+# # # # # # # # # # # # 
+#   QUICK SELECT      #
+# # # # # # # # # # # #
+class QuickSelect:
+    """
+    Goal: find the `k`-th (0-indexed) entry in the given array `a`.
+    
+    """
+    
+    @staticmethod
+    def select(a, k):
+        """
+        Steps:
+        1) Shuffle `a`
+        2) Partition `a`
+        3) Check in which subarray `k` should be (< or > partition index?)
+        4) Partition only the desired subarray and repeat the process until one of this conditions are met:
+            - k == partition element's index or
+            - the array is sorted, then return `a[k]`.
+        """
+        n = len(a)
+        # egdge cases
+        if not n:
+            return None
+        
+        if k >= n:
+            raise ValueError(f"{k = } must be less than {len(a) = }")
+        
+        if n == 1:
+            return a[0]
+        
+        shuffle(a)
+        hi = n
+        lo = 0
+        
+        while lo < (hi-1):
+            j = QuickSelect._partition(a, lo, hi)
+            
+            if k < j:       # k is in the left subarray a[lo, j)
+                hi = j
+            elif k > j:     # k is in the right subarray a[j+1, hi]
+                lo = j + 1
+            else:           # k == j
+                break    
+        
+        return a[k]
+    
+    @staticmethod
+    def _partition(a, lo, hi):
+        """
+        Goal: find a `j`-th array entry, so that:
+            - all entries to its left are less than `a[j]`
+            - all entries to its right are greater than `a[j]`
+            
+        Steps:
+            1) initialize 3 pointers:
+                - lo                : first subarray index
+                - `left = lo + 1`   : scan subarray from left to right.
+                - `right = hi - 1`  : scan subarray from right to left; 
+            
+            2) Repeat until left and right crosses:
+                - scan subarray from left to right until a[left] > a[lo]
+                - scan subarray from right to left until a[right] < a[lo]
+                - swap a[left] < a[right], since they're out of order
+                
+            3) Upon crossing:
+                - all entries to the right of a[right] are `> a[lo]` and
+                - all entries to its left are `< a[lo]`
+                - then, swap a[lo] and a[right] so that the partition element
+                is in its righful place
+            
+            4) Return the value of `right`.
+        """
+        
+        left = lo + 1
+        right = hi - 1
+        
+        while True:
+            while a[left] < a[lo]:
+                if left == hi-1:
+                    break
+                left += 1
+            
+            while a[right] > a[lo]:
+                right -= 1
+            
+            if left >= right:
+                break
+            
+            a[left], a[right] = a[right], a[left]
+            
+        a[lo], a[right] = a[right], a[lo]
+        
+        return right
+   
+from random import randrange
+
+class TestsQuickSelect(unittest.TestCase):
+    def setUp(self) -> None:
+        self.selector = QuickSelect
+        
+    def test_partition(self):
+        a = [3, 1, 0, 2]
+        expected = 3
+        result = self.selector._partition(a, lo=0, hi=4)
+        self.assertEqual(result, expected)
+        
+        for n in range(2, 1_000):
+            shuffle(a := list(range(n)))
+            n = len(a)
+            expected = a[0]
+            result = self.selector._partition(a, 0, n)
+            self.assertEqual(result, expected,
+                            f"{a = }\n{expected = }\n{result = }"
+                             )
+
+    def test_edge_cases(self):
+        
+        # a is empty
+        a = []
+        k = 0
+        result = self.selector.select(a, k)
+        self.assertEqual(result, None)
+        
+        # len(a) == 1
+        a = ['one']
+        k = 0
+        result = self.selector.select(a, k)
+        self.assertEqual(result, 'one')
+        
+        # k out of range
+        a = ['a', 'b', 'c']
+        k = 3
+        with self.assertRaises(ValueError):
+            self.selector.select(a, k)
+
+    def test_quick_select(self):
+        a = [0, 1, 2, 3, 4]
+        #             ^ k
+        expected = a[k:= 3]
+        
+        result = self.selector.select(a, k)
+        self.assertEqual(result, expected)
+        
+    def test_random_cases(self):
+        for n in range(2, 1_000):
+            a = list(range(n))
+            k = randrange(0, n)
+            expected = a[k]
+            shuffle(a)
+            result = self.selector.select(a, k)
+            self.assertEqual(result, expected)
+            
 if __name__ == "__main__":
     unittest.main()

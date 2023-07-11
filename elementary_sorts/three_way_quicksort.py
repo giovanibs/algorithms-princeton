@@ -70,7 +70,7 @@ class ThreeWayQuickSort:
                 i += 1
                 
         # 5) Recursively sort a[lo, lt) and a[gt+1, hi) until the whole array is
-        # sorted.
+        # sorted. Obs.: entries a[lt] and a[gt] are both == a[v]
         ThreeWayQuickSort._sort(a, lo, lt)
         ThreeWayQuickSort._sort(a, gt+1, hi)
         

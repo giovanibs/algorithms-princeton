@@ -528,6 +528,154 @@ class TestsQuickSelect(unittest.TestCase):
             shuffle(a)
             result = self.selector.select(a, k)
             self.assertEqual(result, expected)
+
+# # # # # # # # # # # # 
+#   3-WAY QUICK SORT  #
+# # # # # # # # # # # #
+class ThreeWayQuickSort:
+    """
+    Goal: use partitioning to sort arrays with duplicate keys. For that,
+    the algorith divide the array into 3 parts so that:
+    
+    - For a partitioning entry `v` of `a[lo, hi)]`:
+            - entries to left of `a[lt]` are all less than `v`
+            - entries to the right of `a[gt]` are greater than `v`
+            - entries from `a[lt]` to `a[gt]` (inclusive) are equal to `v`
             
-if __name__ == "__main__":
+    Algo steps:
+    
+    1) Select partitioning element: for the sake of simplicity, we`re taking
+    `a[lo]`.
+    
+    2) Start pointers:
+            - `lt`: will hold the first partitioning entry (a.k.a. `a[lo]`)
+            
+            - `gt`: starts at the end of the array and will eventually hold the
+            last partitioning element
+            
+            - `i`: will scan from left to right.
+    
+    3) Scan the array using `i`:
+    
+            - if `a[i] < a[lt]`: found and entry that should be to the
+            left of `a[lt]`, so put the entry in its right order, that
+            is, swap a[i] with `a[lt]` and increment both.
+            
+            - if `a[i] > a[lt]`: found an entry that should be to the
+            right of a[gt]. To put the entry in the right order, swap
+            `a[i]` with `a[gt]` and decrement `gt`.
+            
+            - if `a[i] == a[lt]`: entry is in the right order, so keep
+            scanning, that is, increment `i`.
+            
+            - When `i` ang `gt` crosses, the array is partitioned.
+                    
+    4) Recursively repeat the process to sort the subarrays `a[lo, lt)` and
+    `a(gt, hi)`.
+    """
+    
+    @staticmethod
+    def sort(a):
+        n = len(a)
+        
+        if n <= 1:
+            return
+        
+        ThreeWayQuickSort._partition(a, 0, n)
+    
+    @staticmethod
+    def _sort(a, lo, hi):
+        pass
+    
+    @staticmethod
+    def _partition(a, lo, hi):
+        
+        subarray_size = hi - lo
+        if subarray_size <= 1:
+            return
+        
+        # 1) Select partitioning element
+        v = a[lo]
+        
+        # 2) Start pointers
+        i = lt = lo
+        gt = hi - 1
+        
+        # 3) Scan the array
+        
+        while i <= gt: # until they cross
+            
+            if a[i] < a[lt]: # a[i] is out of order, move it to the left of `lt`
+                a[i], a[lt] = a[lt], a[i]
+                i += 1
+                lt += 1
+                
+            elif a[i] > a[lt]: # a[i] should be to the right of `gt`
+                a[i], a[gt] = a[gt], a[i]
+                gt -= 1
+                
+            else:   # a[i] is in the right order, that is, a[i] is equal to the
+                    # partitioning element and should be between lt and gt.
+                i += 1
+                
+        # at this point, i and gt have crossed
+        # 4) Recursively partition the remaining subarrays
+        ThreeWayQuickSort._partition(a, lo, lt)
+        ThreeWayQuickSort._partition(a, gt+1, hi)
+          
+import unittest
+from random import shuffle, randrange
+
+class Tests3WayQuickSort(unittest.TestCase):
+    def setUp(self) -> None:
+        self.sort = ThreeWayQuickSort.sort
+    
+    # EDGE CASES
+    def test_sort_empty_array(self):
+        a = []
+        self.sort(a)
+        self.assertEqual(a, [])
+
+    def test_sort_single_element(self):
+        a = [5]
+        self.sort(a)
+        self.assertEqual(a, [5])
+
+    def test_sort_sorted_array(self):
+        a = [1, 2, 3, 4, 5]
+        self.sort(a)
+        self.assertEqual(a, [1, 2, 3, 4, 5])
+
+    def test_sort_reverse_sorted_array(self):
+        a = [5, 4, 3, 2, 1]
+        self.sort(a)
+        self.assertEqual(a, [1, 2, 3, 4, 5])
+
+    def test_sort_array_with_all_duplicates(self):
+        a = [1, 1, 1, 1, 1]
+        self.sort(a)
+        self.assertEqual(a, [1, 1, 1, 1, 1])    
+    
+    # Basic sorting (no duplicates keys)
+    def test_basic_sorting(self):
+        for n in range(2, 1_000):
+            a = list(range(n))
+            expected = a[:]
+            shuffle(a)
+            self.sort(a)
+            self.assertEqual(a, expected)
+    
+    # sorting with duplicate keys     
+    def test_duplicate_keys(self):
+        a = []
+        for _ in range(100):
+            duplicate_items = randrange(0, 10)*[randrange(0, 100)]
+            a.extend(duplicate_items)
+        
+        expected = sorted(a)
+        self.sort(a)
+        self.assertEqual(a, expected)
+
+
+if __name__ == '__main__':
     unittest.main()

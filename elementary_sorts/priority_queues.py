@@ -62,6 +62,9 @@ class UnorderedArrayPQ(ArrayStack):
             2) Swap with last item (if different)
             3) Apply super().pop
         """
+        if self.is_empty:
+            return None
+        
         max_key, max_key_index = self.get_max()
         
         if max_key != self.pq[-1]:
@@ -78,6 +81,9 @@ class UnorderedArrayPQ(ArrayStack):
             2) Swap with last item (if different)
             3) Apply super().pop
         """
+        if self.is_empty:
+            return None
+        
         min_key, min_key_index = self.get_min()
         
         if min_key != self.pq[-1]:
@@ -90,6 +96,9 @@ class UnorderedArrayPQ(ArrayStack):
         """
         Return the largest key in PQ and its index.
         """
+        if self.is_empty:
+            return None
+        
         max_key = max(self.pq)
         max_key_index = self.pq.index(max_key)
         return max_key, max_key_index
@@ -98,16 +107,71 @@ class UnorderedArrayPQ(ArrayStack):
         """
         Return the smallest key in PQ and its index.
         """
+        if self.is_empty:
+            return None
+        
         min_key = min(self.pq)
         min_key_index = self.pq.index(min_key)
         return min_key, min_key_index
+
+class OrderedArrayPQ(ArrayStack):
+    """
+    Very similar to the unordered array PQ. The difference consists in keeping
+    the keys in order.
+    """
+    def __init__(self, capacity):
+        super().__init__()
+        self.pq = self._stack
+        self.CAPACITY = capacity
+    
+    @property
+    def is_empty(self):
+        return len(self.pq) == 0
+
+    @property
+    def is_full(self):
+        return len(self.pq) == self.CAPACITY
+    
+    def insert_key(self, key):
+        if self.is_full:
+            self.remove_min()
+        super().push(key)
+        self._stack.sort()      # keep queue sorted
+    
+    def remove_max(self):
+        if self.is_empty:
+            return None
+        
+        return self.pq.pop()
+    
+    def remove_min(self):
+        if self.is_empty:
+            return None
+        
+        return self._stack.pop(0)
+    
+    def get_max(self):
+        if self.is_empty:
+            return None
+        
+        return self._stack[-1], len(self._stack) - 1
+   
+    def get_min(self):
+        if self.is_empty:
+            return None
+        
+        return self._stack[0], 0
     
 import unittest
+from random import randint
 
 class TestsUnorderedArrayPQ(unittest.TestCase):
+    def setUp(self) -> None:
+        self.PriorityQueue = UnorderedArrayPQ
+    
     def test_is_empty_or_full(self):
         
-        pq = UnorderedArrayPQ(3)        # -> []
+        pq = self.PriorityQueue(3)        # -> []
         self.assertTrue(pq.is_empty)
         self.assertFalse(pq.is_full)
         
@@ -136,25 +200,35 @@ class TestsUnorderedArrayPQ(unittest.TestCase):
         self.assertFalse(pq.is_full)
     
     def test_get_max(self):
-        pq = UnorderedArrayPQ(3)
+        pq = self.PriorityQueue(3)
         pq.insert_key(1)
         pq.insert_key(2)
         pq.insert_key(0)
         result = pq.get_max()
         expected = (2, 1)
         self.assertEqual(result, expected)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.get_max()
+        expected = None
+        self.assertEqual(result, expected)
     
     def test_get_min(self):
-        pq = UnorderedArrayPQ(3)
+        pq = self.PriorityQueue(3)
         pq.insert_key(1)
         pq.insert_key(2)
         pq.insert_key(0)
         result = pq.get_min()
         expected = (0, 2)
         self.assertEqual(result, expected)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.get_min()
+        expected = None
+        self.assertEqual(result, expected)
     
     def test_remove_max(self):
-        pq = UnorderedArrayPQ(3)
+        pq = self.PriorityQueue(3)
         
         pq.insert_key(2)
         pq.insert_key(1)
@@ -172,9 +246,14 @@ class TestsUnorderedArrayPQ(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(pq._stack, [])
         self.assertTrue(pq.is_empty)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.remove_max()
+        expected = None
+        self.assertEqual(result, expected)
 
     def test_remove_min(self):
-        pq = UnorderedArrayPQ(3)
+        pq = self.PriorityQueue(3)
         
         pq.insert_key(0)
         pq.insert_key(2)
@@ -192,6 +271,92 @@ class TestsUnorderedArrayPQ(unittest.TestCase):
         self.assertEqual(result, 2)
         self.assertEqual(pq._stack, [])
         self.assertTrue(pq.is_empty)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.remove_min()
+        expected = None
+        self.assertEqual(result, expected)
 
+
+class TestsOrderedArrayPQ(TestsUnorderedArrayPQ):
+    def setUp(self) -> None:
+        self.PriorityQueue = OrderedArrayPQ
+    
+    def test_is_empty_or_full(self):
+        return super().test_is_empty_or_full()
+        
+    def test_get_max(self):
+        pq = self.PriorityQueue(3)
+        pq.insert_key(1)
+        pq.insert_key(2)
+        pq.insert_key(0)
+        result = pq.get_max()
+        expected = (2, 2)
+        self.assertEqual(result, expected)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.get_max()
+        expected = None
+        self.assertEqual(result, expected)
+        
+        
+    def test_get_min(self):
+        pq = self.PriorityQueue(3)
+        pq.insert_key(1)
+        pq.insert_key(2)
+        pq.insert_key(0)
+        result = pq.get_min()
+        expected = (0, 0)
+        self.assertEqual(result, expected)
+        
+        pq.insert_key(3)
+        result = pq.get_min()
+        expected = (1, 0)
+        self.assertEqual(result, expected)
+        
+        pq = self.PriorityQueue(3)
+        result = pq.get_min()
+        expected = None
+        self.assertEqual(result, expected)
+        
+    def test_insert_key(self):
+        pq = self.PriorityQueue(3)
+        
+        pq.insert_key(1)
+        self.assertEqual(pq._stack, [1])
+        
+        pq.insert_key(2)
+        self.assertEqual(pq._stack, [1, 2])
+        
+        pq.insert_key(0)
+        self.assertEqual(pq._stack, [0, 1, 2])
+        
+        pq.insert_key(3)
+        self.assertEqual(pq._stack, [1, 2, 3])
+        
+        pq.insert_key(2)
+        self.assertEqual(pq._stack, [2, 2, 3])
+        
+    def test_random_insertions(self):
+        capacity = 10
+        pq = self.PriorityQueue(capacity)
+        
+        expected = []
+        
+        for _ in range(1_000):
+            random_key = randint(0, 100)
+            
+            # expected
+            if len(expected) == capacity:
+                expected.pop(0)
+            expected.append(random_key)
+            expected.sort()
+            
+            # result
+            pq.insert_key(random_key)
+            
+            # assert
+            self.assertEqual(pq._stack, expected)
+        
 if __name__ == '__main__':
     unittest.main()

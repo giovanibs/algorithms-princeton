@@ -8,7 +8,7 @@ Collections: insert and remove items. Which item to remove?
 | Randomized queue    | Random                  |            
 | Priority queue (PQ) | Largest or smallest     |
 
-Priority queues have a limited capacity.
+Priority queues MAY have a limited capacity.
 
 Priority queue (PQ) API:
     - init          : initialize a empty queue data structure
@@ -30,7 +30,7 @@ class UnorderedArrayPQ(ArrayStack):
     - `insert` is equivalent to `push` in the stack data structure
     - `remove_max`: find the max key, exchange it with the last one and then
     `pop` the item from the list
-    
+    - This implementations considers a LIMITED CAPACITY for the PQ.
     """
     def __init__(self, capacity):
         super().__init__()
@@ -118,6 +118,7 @@ class OrderedArrayPQ(ArrayStack):
     """
     Very similar to the unordered array PQ. The difference consists in keeping
     the keys in order.
+    - This implementations considers a LIMITED CAPACITY for the PQ.
     """
     def __init__(self, capacity):
         super().__init__()

@@ -66,6 +66,10 @@ class BinaryHeap:
         return len(self._a) - 1
     
     @property
+    def is_empty(self):
+        return len(self) == 0
+        
+    @property
     def a(self):
         return self._a[1:]
         
@@ -128,14 +132,15 @@ class BinaryHeap:
         3) Repeat until until we reach a node with both children smaller, or
         the bottom.
         """
-        
+        self._validate_keys(k)
         while 2*k <= len(self): # while item at `k` has at least 1 child
             
             l = self._get_largest_child(k)
-            
-            if self._a[k] < self._a[l]:
-                self.swap(k, l)
+            if l is not None and self._a[k] < self._a[l]:
+                self._swap_items_at(k, l)
                 k = l
+            else:
+                break
                 
     def _swap_items_at(self, key1, key2):
         """
@@ -154,7 +159,7 @@ class BinaryHeap:
         """
         Returns the INDEX of largest item between bh[k*2] and bh[k*2+1].
         """
-        if 2*k < len(self):                 # item at `k` has NO child
+        if 2*k > len(self):                 # item at `k` has NO child
             return None
         elif 2*k == len(self):              # item at `k` has only 1 child
             return 2*k
@@ -162,6 +167,7 @@ class BinaryHeap:
             return 2*k
         else:                                       # item at 2*k+1 is larger
             return 2*k + 1
+
 
 ### TESTS ###
 import unittest
@@ -174,8 +180,10 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(self.bh.a, [])
         
     def test_init_with_items(self):
-        self.bh = BinaryHeap([1, 2, 3])
+        items = [1, 2, 3]
+        self.bh = BinaryHeap(items)
         expected = [3, 1, 2]
+        self.assertEqual(len(items), len(self.bh))
         self.assertEqual(expected, self.bh.a)
         
     def test_swim_up(self):
@@ -209,6 +217,38 @@ class TestsBinaryHeap(unittest.TestCase):
             self.bh._swim_up_item_at(0)
         with self.assertRaises(IndexError):
             self.bh._swim_up_item_at(4)
+        
+    def test_sink_down(self):
+        self.bh._a = [None, 2, 1, 3]
+        
+        # sink down smaller parent
+        self.bh._sink_down_item_at(1)
+        expected = [3, 1, 2]
+        self.assertEqual(expected, self.bh.a)
+        
+        # sink down larger parent
+        self.bh._sink_down_item_at(1)
+        expected = [3, 1, 2]
+        self.assertEqual(expected, self.bh.a)
+        
+        # sink down node with no child
+        self.bh._sink_down_item_at(2)
+        expected = [3, 1, 2]
+        self.assertEqual(expected, self.bh.a)
+        
+        # deeper tree
+        self.bh._a = [None, 2, 5, 4, 3, 6, 1, 7]
+        #     key = [0,     1, 2, 3, 4, 5, 6, 7]
+        self.bh._sink_down_item_at(1)
+        expected = [5, 6, 4, 3, 2, 1, 7]
+        self.assertEqual(expected, self.bh.a)
+        
+        # IndexError
+        self.bh._a = [None, 3, 2, 1]
+        with self.assertRaises(IndexError):
+            self.bh._sink_down_item_at(0)
+        with self.assertRaises(IndexError):
+            self.bh._sink_down_item_at(4)
         
     def test_swap_items(self):
         self.bh._a = [None, 5, 4, 3, 2, 1]
@@ -244,4 +284,34 @@ class TestsBinaryHeap(unittest.TestCase):
         self.bh.insert("middle")
         expected = ["middle", "first", "last"]
         self.assertEqual(expected, self.bh.a)
+        
+        self.bh.insert("wannabe last")
+        expected = ["wannabe last", "middle", "last", "first"]
+        self.assertEqual(expected, self.bh.a)
+        
+    def test_del_maximum(self):
+        self.bh = BinaryHeap(['a', 'b', 'c', 'd', 'e'])
+        # expected = ['e', 'd', 'b', 'a', 'c']
+        maximum = self.bh.del_maximum()
+        # expected = ['d', 'c', 'b', 'a']
+        expected_maximum = 'e'
+        self.assertEqual(expected_maximum, maximum)
+        expected_a = ['d', 'c', 'b', 'a']
+        self.assertEqual(expected_a, self.bh.a)
+        
+    def test_get_largest_child(self):
+        self.bh = BinaryHeap([1, 2, 3, 4, 5])
+        # expected = [5, 4, 3, 1, 2]
+        # keys        1  2  3  4  5
+        result = self.bh._get_largest_child(1)
+        expected = 2
+        self.assertEqual(expected, result)
+        
+        result = self.bh._get_largest_child(2)
+        expected = 5
+        self.assertEqual(expected, result)
+        
+        result = self.bh._get_largest_child(3)
+        expected = None
+        self.assertEqual(expected, result)
         

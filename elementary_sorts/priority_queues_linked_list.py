@@ -1,95 +1,55 @@
-"""
-Collections: insert and remove items. Which item to remove?
-
-| Collection          |   Removed item          |
-| ------------------- | ----------------------- |
-| Stack               | Last added (LIFO)       |
-| Queue               | First added (FIFO)      |
-| Randomized queue    | Random                  |            
-| Priority queue (PQ) | Largest or smallest     |
-
-Priority queues have a limited capacity.
-
-Priority queue (PQ) API:
-    - init          : initialize a empty queue data structure
-    - insert(key)   : insert a key into the PQ
-    - remove_max    : remove and return the largest queue
+class LinkedListPQ:
+    """
+    Very basic implementation of a Priority Queue using a reverse-ordered queue.
+    i.e. the largest `Node` will be kept at the head of the queue.
+    `Node` objects added to the PQ will be inserted in order.
+    
+    API:
+    - init          : initialize an empty queue data structure
+    - insert_key    : insert a key into the PQ in the right order
+    - remove_max    : remove and return the largest queue (i.e. the PQ's head)
     - is_empty      : True if the priority queue is empty
-    - get_max       : return the largest key
-"""
-import os
-import sys
-package_path = os.path.abspath('..')
-sys.path.append(package_path)
-
-from ..stacks_queues.queues import LinkedListQueue
-
-class UnorderedLinkedListPQ(LinkedListQueue):
+    - get_max       : return the largest key (i.e. the PQ's head)
     """
-    Inherits from LinkedListQueue since it already implements `first` and
-    `last` nodes.
-    """
-    def __init__(self, capacity):
-        super().__init__()
-        self._min = None
-        self._max = None
-        self.CAPACITY = capacity
+    def __init__(self):
+        self._head = None
+        self._len = 0
     
     @property
     def is_empty(self):
         return self._len == 0
 
-    @property
-    def is_full(self):
-        return self._len == self.CAPACITY
-        
     def insert_key(self, key):
         """
-        Inserts a new Node with value `key` into the PQ. It is equivalent to
-        `enqueue` in the LinkedListQueue.
-        
-        - if the PQ is at full capacity, call `remove_min` and then enqueue the
-        new Node
+        Inserts a new Node with value `key` into the PQ, according to its
+        priority.
         """
-        if not self.is_full:
-            super().enqueue(key)
         
+        if self.is_empty:
+            self._head = self._Node(key)
+            
+        elif key >= self._head.item:
+            self._head = self._Node(key, next=self._head)
+            
+        else: # find where the node belongs in the order
+            current = self._head
+            
+            while (current.next is not None) and (key < current.next.item):
+                current = current.next
+                
+            # found a node that is <= to the new node
+            current.next = self._Node(key, next=current.next)
+            
+        self._len += 1
+                
     def remove_max(self):
         """
-        Removes and returns the first occurrence of the largest key.
-            1) Find max Node
-            2) Swap with last Node (if different)
-            3) Apply super().pop
+        largest Node == queue head
         """
-        if self.is_empty:
-            return None
-        
-        max_key, max_key_index = self.get_max()
-        
-        if max_key != self.pq[-1]:
-            self.pq[max_key_index], self.pq[-1] = \
-                self.pq[-1], self.pq[max_key_index]
-            
-        return super().pop()
-    
-    def remove_min(self):
-        """
-        Removes the first occurrence of the SMALLEST key to make room for a new
-        key:
-            1) find smallest Node
-            2) swap with the last Node (if different)
-            3) Pop Node (= dequeue)
-        """
-        if self.is_empty:
-            return None
-        
-        min_key, min_key_index = self.get_min()
-        
-        if min_key != self.pq[-1]:
-            self.pq[min_key_index], self.pq[-1] = \
-                self.pq[-1], self.pq[min_key_index]
-            
-        return super().pop()
+        largest = self._head.item
+        self._head = self._head.next
+        self._len -= 1
+        return largest
     
     def get_max(self):
         """
@@ -98,29 +58,77 @@ class UnorderedLinkedListPQ(LinkedListQueue):
         if self.is_empty:
             return None
         
-        current = self._first
-        max_node = current
-
-        while current.next is not None:
-            current = current.next
-            if current.item > max_node.item:
-                max_node = current
-        
-        return max_node
+        return self._head.item
     
-    def get_min(self):
-        """
-        Return the smallest key in PQ and its index.
-        """
-        if self.is_empty:
-            return None
+    class _Node:
+        def __init__(self, item, next=None):
+            self.item = item
+            self.next = next
+            
+        def __eq__(self, other):
+            return self.item == other.item
         
-        current = self._first
-        min_node = current
+        def __lt__(self, other):
+            return self.item < other.item
 
-        while current.next is not None:
-            current = current.next
-            if current.item < min_node.item:
-                min_node = current
+#   #   #   #   #   #   #   #
+#           TESTS           #
+#   #   #   #   #   #   #   #
+import unittest
+from random import shuffle, random
+
+class TestsLinkedListPQ(unittest.TestCase):
+    def setUp(self):
+        self.pq = LinkedListPQ()
         
-        return min_node
+    def test_empty_pq(self):
+        self.assertTrue(self.pq.is_empty)
+        
+        self.pq.insert_key('foo')
+        self.assertFalse(self.pq.is_empty)
+        
+        self.pq.insert_key('bar')
+        self.assertFalse(self.pq.is_empty)
+        
+        self.pq.remove_max()
+        self.assertFalse(self.pq.is_empty)
+        
+        self.pq.remove_max()
+        self.assertTrue(self.pq.is_empty)
+        
+    def test_get_max(self):
+        items = [random() for _ in range(100)]
+        expected = max(items)
+        
+        for item in items:
+            self.pq.insert_key(item)
+            
+        result = self.pq.get_max()
+        
+        self.assertEqual(expected, result)
+            
+    def test_enqueue_dequeue_single_element(self):
+        expected = 'a'
+        self.pq.insert_key(expected)
+        result = self.pq.remove_max()
+        
+        self.assertTrue(self.pq.is_empty)
+        self.assertEqual(result, expected)
+    
+    def test_enqueue_dequeue_multiple_elements(self):
+        n = 100
+        
+        for _ in range(1, n):
+            shuffle(a:=list(range(n)))
+            
+            for key in a:
+                self.pq.insert_key(key)
+            
+            dequeued = [self.pq.remove_max() for _ in a]
+            expected = sorted(a, reverse=True)
+            
+            self.assertTrue(self.pq.is_empty)
+            self.assertEqual(dequeued, expected)
+            
+if __name__ == "__main__":
+    unittest.main()

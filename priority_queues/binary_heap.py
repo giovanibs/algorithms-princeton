@@ -174,14 +174,15 @@ import unittest
 
 class TestsBinaryHeap(unittest.TestCase):
     def setUp(self) -> None:
-        self.bh = BinaryHeap()
+        self.BinaryHeap = BinaryHeap # extensible for HeapSort
+        self.bh = self.BinaryHeap()
         
     def test_init_with_no_items(self):
         self.assertEqual(self.bh.a, [])
         
     def test_init_with_items(self):
         items = [1, 2, 3]
-        self.bh = BinaryHeap(items)
+        self.bh = self.BinaryHeap(items)
         expected = [3, 1, 2]
         self.assertEqual(len(items), len(self.bh))
         self.assertEqual(expected, self.bh.a)
@@ -290,7 +291,7 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected, self.bh.a)
         
     def test_del_maximum(self):
-        self.bh = BinaryHeap(['a', 'b', 'c', 'd', 'e'])
+        self.bh = self.BinaryHeap(['a', 'b', 'c', 'd', 'e'])
         # expected = ['e', 'd', 'b', 'a', 'c']
         maximum = self.bh.del_maximum()
         # expected = ['d', 'c', 'b', 'a']
@@ -300,7 +301,7 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected_a, self.bh.a)
         
     def test_get_largest_child(self):
-        self.bh = BinaryHeap([1, 2, 3, 4, 5])
+        self.bh = self.BinaryHeap([1, 2, 3, 4, 5])
         # expected = [5, 4, 3, 1, 2]
         # keys        1  2  3  4  5
         result = self.bh._get_largest_child(1)

@@ -1,59 +1,67 @@
 class BinaryHeap:
     """
-    The binary heap is a data structure that can efficiently support the basic
-    priority-queue operations.
+        The binary heap is a data structure that can efficiently support the
+    basic priority-queue operations.
     
-    Uses a complete binary tree, which is one that's perfectly balanced, except
-    possibly for the bottom level.
+        Uses a complete binary tree, which is one that's perfectly balanced,
+    except possibly for the bottom level.
     
     ### Heap-ordered binary tree
     
-    - Keys in nodes.
-    - Largest key is at the root.
-    - Parent's key no smaller then children's key.
+        - Keys in nodes.
+        - Largest key is at the root.
+        - Parent's key no smaller then children's key.
     
     ### Array representation
     
-    - Indices start at 1 (for convenience, `array[0]` is empty)
-    - Take nodes in level order
-    - No explicit links needed
+        - Indices start at 1 (for convenience, `array[0]` is empty)
+        - Take nodes in level order
+        - No explicit links needed
     
     ### Properties
     
-    - Largest key is the root of the binary tree, which is `array[1]`
-    - Parent of node at the index `k` is at index `k//2`
-    - Children of node at `k` are at `2k` and `2k+1`
+        - Largest key is the root of the binary tree, which is `array[1]`
+        - Parent of node at the index `k` is at index `k//2`
+        - Children of node at `k` are at `2k` and `2k+1`
+    
+                           (...)
+                          /
+                    (k//2)
+                   /      \
+              ( k )        (k+1)
+             /     \
+        (2*k)       (2*k+1)      
     
     ### Bottom-up reheapify: `swim`
     
-    If there's a violation of the heap order, that is, a child's key becomes
-    greater than its parent's key, apply `swim` method for the node:
-    
-    1) Exchange the key in child, `a[k]`, with the key in its parent, `a[k//2]`.
-    2) Repeat until heap order is restored.
+        If there's a violation of the heap order, that is, a child's key becomes
+        greater than its parent's key, apply `swim` method for the node:
+        
+        1) Exchange the key in child, `a[k]`, with its parent, `a[k//2]`.
+        
+        2) Repeat until heap order is restored.
     
     ### Top-down heapify: `sink`
     
-    If by any chance the parent's key becomes smaller than any of it's
-    children, apply `sink` method:
-    
-    1) Exchange key in parent with key in largest child (to make sure the new
-    parent is greater than both children).
-    2) Repeat until heap order is restored.
+        If by any chance the parent's key becomes smaller than any of it's
+        children, apply `sink` method:
+        
+        1) Exchange key in parent with key in largest child (to make sure the
+        new parent is also greater than the other child).
+        
+        2) Repeat until heap order is restored.
     
     ### Insertion in a heap
     
-    1) Add new node at the end of the array.
-    2) Increment the size of the heap
-    2) Swim it up to restore heap order.
+        1) Add new node at the end of the array and increment heap size.
+        2) Swim up the new node to restore heap order.
     
     ### Delete the maximum in a heap
     
-    1) Exchange item at root with the item at the end of the heap.
-    2) Pop out the last node and save it to return.
-    3) Decrement heap size
-    3) Sink down the new root to restore heap order
-    4) Return the removed key.
+        1) Exchange item at root with the item at the end of the heap.
+        2) Pop out the last node and save it to return and decrement heap size.
+        3) Sink down the new root to restore heap order.
+        4) Return the removed key.
     """
     
     def __init__(self, items=[]):

@@ -126,6 +126,9 @@ class TestsOrdinalList(unittest.TestCase):
     def test_pop_invalid_index(self):
         with self.assertRaises(IndexError):
             self.lst.pop(6)
+            
+    def test_compare_with_default_list(self):
+        self.assertEqual(self.lst, list([1, 2, 3, 4, 5]))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
 from binary_heap import BinaryHeap
+from ordinal_list import OrdinalList
 
 
 class HeapSort(BinaryHeap):
@@ -71,7 +72,7 @@ class HeapSort(BinaryHeap):
 ### TESTS ###
 #############
 from binary_heap import TestsBinaryHeap
-
+from random import shuffle
 
 class TestsHeapSort(TestsBinaryHeap):
     def setUp(self) -> None:
@@ -121,15 +122,24 @@ class TestsHeapSort(TestsBinaryHeap):
         expected_a = [2, 3, 4, 5, 1]
         self.assertEqual(expected_a, result_a)
 
+    def test_sort_big_array(self):
+        n = 10_000
+        shuffle(items := list(range(n)))
+        self.bh = self.BinaryHeap(items)
+        self.bh.sort()
+        expected_a = sorted(items)
+        self.assertEqual(expected_a, self.bh.a)
+    
     def test_sort_random_cases(self):
-        for n in range(1_000):
-            self.bh = self.BinaryHeap(items := list(range(n)))
+        for n in range(100):
+            shuffle(items := list(range(n)))
+            self.bh = self.BinaryHeap(items)
             self.bh.sort()
             expected_a = sorted(items)
             self.assertEqual(expected_a, self.bh.a)
 
     def test_sink_down_furthest_k(self):
-        self.bh._a = [None, 1, 2, 3, 4, 5]
+        self.bh._a = OrdinalList([1, 2, 3, 4, 5])
 
         self.bh._sink_down_item_at(1, 2)
         expected_a = [2, 1, 3, 4, 5]
@@ -168,7 +178,7 @@ class TestsHeapSort(TestsBinaryHeap):
         self.assertEqual(expected_a, self.bh.a)
 
         # ValueError
-        self.bh._a = [None, 3, 2, 1]
+        self.bh._a = OrdinalList([3, 2, 1])
         with self.assertRaises(ValueError):
             self.bh._sink_down_item_at(1, 0)
         with self.assertRaises(ValueError):

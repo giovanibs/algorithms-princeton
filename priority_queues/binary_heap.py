@@ -1,3 +1,5 @@
+from ordinal_list import OrdinalList
+
 class BinaryHeap:
     """
         The binary heap is a data structure that can efficiently support the
@@ -65,13 +67,14 @@ class BinaryHeap:
     """
     
     def __init__(self, items=[]):
-        self._a = [None] # Indices start at 1
+        # Indices start at 1: OrdinalList is 1-based index
+        self._a = OrdinalList() 
         
         for item in items:
             self.insert(item)
         
     def __len__(self):
-        return len(self._a) - 1
+        return len(self._a)
     
     @property
     def is_empty(self):
@@ -79,7 +82,7 @@ class BinaryHeap:
         
     @property
     def a(self):
-        return self._a[1:]
+        return self._a
         
     def insert(self, item):
         """
@@ -197,7 +200,7 @@ class TestsBinaryHeap(unittest.TestCase):
         
     def test_swim_up(self):
         
-        self.bh._a = [None, 2, 1, 3]
+        self.bh._a = [2, 1, 3]
         # swim up root
         self.bh._swim_up_item_at(1)
         expected = [2, 1, 3]
@@ -214,21 +217,21 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected, self.bh.a)
         
         # deeper node
-        self.bh._a = [None, 6, 5, 4, 3, 2, 1, 7]
+        self.bh._a = [6, 5, 4, 3, 2, 1, 7]
         #     key = [0,    1, 2, 3, 4, 5, 6, 7]
         self.bh._swim_up_item_at(7)
         expected = [7, 5, 6, 3, 2, 1, 4]
         self.assertEqual(expected, self.bh.a)
         
         # IndexError
-        self.bh._a = [None, 3, 2, 1]
+        self.bh._a = [3, 2, 1]
         with self.assertRaises(IndexError):
             self.bh._swim_up_item_at(0)
         with self.assertRaises(IndexError):
             self.bh._swim_up_item_at(4)
         
     def test_sink_down(self):
-        self.bh._a = [None, 2, 1, 3]
+        self.bh._a = [2, 1, 3]
         
         # sink down smaller parent
         self.bh._sink_down_item_at(1)
@@ -246,21 +249,21 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected, self.bh.a)
         
         # deeper tree
-        self.bh._a = [None, 2, 5, 4, 3, 6, 1, 7]
+        self.bh._a = [2, 5, 4, 3, 6, 1, 7]
         #     key = [0,     1, 2, 3, 4, 5, 6, 7]
         self.bh._sink_down_item_at(1)
         expected = [5, 6, 4, 3, 2, 1, 7]
         self.assertEqual(expected, self.bh.a)
         
         # IndexError
-        self.bh._a = [None, 3, 2, 1]
+        self.bh._a = [3, 2, 1]
         with self.assertRaises(IndexError):
             self.bh._sink_down_item_at(0)
         with self.assertRaises(IndexError):
             self.bh._sink_down_item_at(4)
         
     def test_swap_items(self):
-        self.bh._a = [None, 5, 4, 3, 2, 1]
+        self.bh._a = [5, 4, 3, 2, 1]
         #     key = [0,    1, 2, 3, 4, 5]
         
         self.bh._swap_items_at(1, 5)

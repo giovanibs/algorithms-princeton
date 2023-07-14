@@ -76,6 +76,9 @@ class BinaryHeap:
     def __len__(self):
         return len(self._a)
     
+    def __str__(self):
+        return str(self._a)
+    
     @property
     def is_empty(self):
         return len(self) == 0
@@ -170,15 +173,15 @@ class BinaryHeap:
         """
         Returns the INDEX of largest item between bh[k*2] and bh[k*2+1].
         """
-        if 2*k > len(self):                 # item at `k` has NO child
+        if len(self) < 2*k: # item has no child
             return None
-        elif 2*k == len(self):              # item at `k` has only 1 child
-            return 2*k
-        elif self._a[2*k] >= self._a[2*k + 1]:      # item at 2*k is larger
-            return 2*k
-        else:                                       # item at 2*k+1 is larger
-            return 2*k + 1
-
+        
+        if len(self) >= (2*k + 1):                  # item has both children
+            if self._a[2*k + 1] >= self._a[2*k]:    # item at 2*k is larger
+                return 2*k + 1
+        
+        # item at `k` has only 1 child or 2*k is the largest
+        return 2*k
 
 ### TESTS ###
 import unittest
@@ -200,7 +203,7 @@ class TestsBinaryHeap(unittest.TestCase):
         
     def test_swim_up(self):
         
-        self.bh._a = [2, 1, 3]
+        self.bh._a = OrdinalList([2, 1, 3])
         # swim up root
         self.bh._swim_up_item_at(1)
         expected = [2, 1, 3]
@@ -217,21 +220,21 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected, self.bh.a)
         
         # deeper node
-        self.bh._a = [6, 5, 4, 3, 2, 1, 7]
+        self.bh._a = OrdinalList([6, 5, 4, 3, 2, 1, 7])
         #     key = [0,    1, 2, 3, 4, 5, 6, 7]
         self.bh._swim_up_item_at(7)
         expected = [7, 5, 6, 3, 2, 1, 4]
         self.assertEqual(expected, self.bh.a)
         
         # IndexError
-        self.bh._a = [3, 2, 1]
+        self.bh._a = OrdinalList([3, 2, 1])
         with self.assertRaises(IndexError):
             self.bh._swim_up_item_at(0)
         with self.assertRaises(IndexError):
             self.bh._swim_up_item_at(4)
         
     def test_sink_down(self):
-        self.bh._a = [2, 1, 3]
+        self.bh._a = OrdinalList([2, 1, 3])
         
         # sink down smaller parent
         self.bh._sink_down_item_at(1)
@@ -249,22 +252,22 @@ class TestsBinaryHeap(unittest.TestCase):
         self.assertEqual(expected, self.bh.a)
         
         # deeper tree
-        self.bh._a = [2, 5, 4, 3, 6, 1, 7]
+        self.bh._a = OrdinalList([2, 5, 4, 3, 6, 1, 7])
         #     key = [0,     1, 2, 3, 4, 5, 6, 7]
         self.bh._sink_down_item_at(1)
         expected = [5, 6, 4, 3, 2, 1, 7]
         self.assertEqual(expected, self.bh.a)
         
         # IndexError
-        self.bh._a = [3, 2, 1]
+        self.bh._a = OrdinalList([3, 2, 1])
         with self.assertRaises(IndexError):
             self.bh._sink_down_item_at(0)
         with self.assertRaises(IndexError):
             self.bh._sink_down_item_at(4)
         
     def test_swap_items(self):
-        self.bh._a = [5, 4, 3, 2, 1]
-        #     key = [0,    1, 2, 3, 4, 5]
+        self.bh._a = OrdinalList([5, 4, 3, 2, 1])
+        #     key =  [1, 2, 3, 4, 5]
         
         self.bh._swap_items_at(1, 5)
         expected = [1, 4, 3, 2, 5]

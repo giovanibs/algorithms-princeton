@@ -46,11 +46,22 @@ class BST:
     - Search for key, then two cases:
         - `key` in tree: update value
         - `key` NOT in tree: add new node
+        
+    ## BST Operations
+    
+    Minimum     : largest 
+    Maximum     : smallest
+    Floor       : largest key that is less than a given key
+    Ceiling     : smallest key that is greater than a given key
+    Size        : subtree counts, i.e. Node count
+    Rank        : how many keys are less than a given key
+    Delete      : lazy deletion, del the minimum, Hibbard deletion
+    Ordered iteration :
     """
     def __init__(self):
         self.root = None
     
-    def search(self, k):
+    def get_value(self, k):
         node = self.root
         
         while node is not None:
@@ -79,7 +90,132 @@ class BST:
             node.value = v
             
         return node
+
+    def get_max(self):
+        if self.root == None:
+            return None
+        
+        current_node = self.root
+        
+        while current_node.right is not None:
+            current_node = current_node.right
             
+        return current_node.key
+    
+    def get_min(self):
+        if self.root == None:
+            return None
+        
+        current_node = self.root
+        
+        while current_node.left is not None:
+            current_node = current_node.left
+            
+        return current_node.key
+    
+    def get_floor(self, k):
+        """
+        Returns LARGEST key that is less than `k`.
+        
+        Steps:
+        1) Starting from the root element of a subtree, compare `k` and the key:
+            
+            - if `k` is the root, then it is the floor
+            
+            - `k` < key at this root: must look in the left subtree for a key
+            less than `k`.
+        
+            - `k` > key at root: this root could be the floor, but we must check
+            for another potential floor in the right subtree. That is, we
+            recursively call get_floor with right subtree as root to find a
+            larger floor for `k`.
+        """
+        floor_node = self._get_floor(self.root, k)
+        
+        if floor_node == None:
+            return None
+        
+        return floor_node.key
+    
+    def _get_floor(self, subtree, k):
+        if subtree is None:
+            return None
+        
+        # the root is the floor itself
+        if k == subtree.key:
+            return subtree
+        
+        if k < subtree.key:
+            # floor must be in left subtree
+            left_subtree = subtree.left
+            return self._get_floor(left_subtree, k)
+        
+        # ELSE: floor must be in right subtree
+        right_subtree = subtree.right
+        larger_floor = self._get_floor(right_subtree, k)
+        
+        if larger_floor is None:
+            # if no larger floor is found, than this floor is the one
+            return subtree
+        else:
+            return larger_floor
+    
+    def get_ceiling(self, k):
+        """
+        Returns smallest entry that is greater than `k`.
+        
+        Steps:
+        
+        1) starting from the subtree `root` element
+            - if `k` == `root`, then `root` is the ceiling.
+            
+            - if `k` > `root`, then the the ceiling is in the right subtree and
+            the root node has nothing to do whatsaoever with it. So, we recurse
+            with the right subtree as `root`. If, by any chance, the right
+            subtree is `None`, the recursive call will return `None`.
+            
+            - if `k` < `root`, then `root` may be the ceiling or the ceiling is
+            in the left subtree. then:
+                    - recursively call get_ceiling. when the returned value is
+                    None, we've found the ceiling
+        """
+        ceiling_node = self._get_ceiling(self.root, k)
+        
+        if ceiling_node == None:
+            return None
+        
+        return ceiling_node.key
+    
+    def _get_ceiling(self, subtree, k):
+        if subtree is None:
+            return None
+        
+        if k == subtree.key:
+            return subtree
+        
+        if k > subtree.key:
+            # ceiling must be in right subtree
+            right_subtree = subtree.right
+            return self._get_ceiling(right_subtree, k)
+        
+        # ELSE: ceiling could be this subtree's root or be in its left subtree
+        left_subtree = subtree.left
+        
+        # recurse to look for a smaller ceiling in the left subtree
+        smaller_ceiling = self._get_ceiling(left_subtree, k)
+
+        # check if smaller ceiling found        
+        if smaller_ceiling is None:
+            return subtree
+        else:
+            return smaller_ceiling
+        
+    def get_rank(self, k):
+        raise NotImplementedError
+    
+    def del_key(self, k):
+        raise NotImplementedError
+    
     class _Node:
         def __init__(self, key, value, left=None, right=None):
             self.key    = key
@@ -91,43 +227,44 @@ class BST:
             return str(self.key)
 
 import unittest
+from random import randint, randrange
 
 class TestsBST(unittest.TestCase):
     def setUp(self) -> None:
         self.bst = BST()
     
-    def test_search_existing_key(self):
+    def test_get_value_existing_key(self):
         self.bst.put(5, 'apple')
         self.bst.put(2, 'banana')
         self.bst.put(7, 'cherry')
 
-        result = self.bst.search(2)
+        result = self.bst.get_value(2)
         self.assertEqual(result, 'banana')
 
-    def test_search_nonexistent_key(self):
+    def test_get_value_nonexistent_key(self):
         self.bst.put(5, 'apple')
         self.bst.put(2, 'banana')
         self.bst.put(7, 'cherry')
 
-        result = self.bst.search(9)
+        result = self.bst.get_value(9)
         self.assertEqual(result, None)
 
-    def test_search_empty_tree(self):
+    def test_get_value_empty_tree(self):
 
-        result = self.bst.search(5)
+        result = self.bst.get_value(5)
         self.assertEqual(result, None)
 
     def test_put_new_key(self):
         self.bst.put(5, 'apple')
 
-        result = self.bst.search(5)
+        result = self.bst.get_value(5)
         self.assertEqual(result, 'apple')
 
     def test_put_duplicate_key(self):
         self.bst.put(5, 'apple')
         self.bst.put(5, 'banana')
 
-        result = self.bst.search(5)
+        result = self.bst.get_value(5)
         self.assertEqual(result, 'banana')
 
     def test_put_multiple_keys(self):
@@ -136,14 +273,14 @@ class TestsBST(unittest.TestCase):
         self.bst.put(7, 'cherry')
         self.bst.put(4, 'date')
 
-        result = self.bst.search(4)
+        result = self.bst.get_value(4)
         self.assertEqual(result, 'date')
 
-    def test_put_and_search_large_tree(self):
+    def test_put_and_get_value_large_tree(self):
         for i in range(1, 101):
             self.bst.put(i, str(i))
 
-        result = self.bst.search(77)
+        result = self.bst.get_value(77)
         self.assertEqual(result, '77')
         self.assertOrderingProperty(self.bst.root)
         
@@ -174,5 +311,235 @@ class TestsBST(unittest.TestCase):
             self.assertGreater(right_subtree.key, node.key)
             self.assertOrderingProperty(right_subtree)
 
+    def test_get_max(self):
+        
+        # empty tree
+        expected = None
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+        # 1 node
+        self.bst.put(5, 'apple')
+        expected = 5
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(2, 'banana')
+        expected = 5
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(7, 'cherry')
+        expected = 7
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(4, 'date')
+        expected = 7
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(9, 'eggplant')
+        expected = 9
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+    def test_get_max_random_tests(self):
+        random_keys = [randint(0, 1_000) for _ in range(100)]
+        for key in random_keys:
+            self.bst.put(key, str(key))
+        
+        expected = max(random_keys)
+        result = self.bst.get_max()
+        self.assertEqual(expected, result)
+        
+    def test_get_min(self):
+        
+        # empty tree
+        expected = None
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+        # 1 node
+        self.bst.put(5, 'apple')
+        expected = 5
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(2, 'banana')
+        expected = 2
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(1, 'cherry')
+        expected = 1
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(4, 'date')
+        expected = 1
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+        self.bst.put(9, 'eggplant')
+        expected = 1
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+    def test_get_min_random_tests(self):
+        random_keys = [randint(0, 1_000) for _ in range(100)]
+        for key in random_keys:
+            self.bst.put(key, str(key))
+        
+        expected = min(random_keys)
+        result = self.bst.get_min()
+        self.assertEqual(expected, result)
+        
+    def test_get_floor(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+        
+        # floor == root
+        self.assertEqual(self.bst.get_floor(50), 50)
+        self.assertEqual(self.bst.get_floor(70), 70)
+        self.assertEqual(self.bst.get_floor(30), 30)
+        self.assertEqual(self.bst.get_floor(10), 10)
+        self.assertEqual(self.bst.get_floor(80), 80)
+        self.assertEqual(self.bst.get_floor(40), 40)
+        
+        # other
+        self.assertEqual(self.bst.get_floor(1), None)
+        self.assertEqual(self.bst.get_floor(5), None)
+        self.assertEqual(self.bst.get_floor(15), 10)
+        self.assertEqual(self.bst.get_floor(25), 10)
+        self.assertEqual(self.bst.get_floor(35), 30)
+        self.assertEqual(self.bst.get_floor(45), 40)
+        self.assertEqual(self.bst.get_floor(69), 50)
+        self.assertEqual(self.bst.get_floor(99), 80)
+        self.assertEqual(self.bst.get_floor(88), 80)
+        self.assertEqual(self.bst.get_floor(77), 70)
+    
+    def test_get_ceiling(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+        
+        # ceiling == root
+        self.assertEqual(self.bst.get_ceiling(50), 50)
+        self.assertEqual(self.bst.get_ceiling(70), 70)
+        self.assertEqual(self.bst.get_ceiling(30), 30)
+        self.assertEqual(self.bst.get_ceiling(10), 10)
+        self.assertEqual(self.bst.get_ceiling(80), 80)
+        self.assertEqual(self.bst.get_ceiling(40), 40)
+        
+        # other
+        self.assertEqual(self.bst.get_ceiling(1), 10)
+        self.assertEqual(self.bst.get_ceiling(5), 10)
+        self.assertEqual(self.bst.get_ceiling(15), 30)
+        self.assertEqual(self.bst.get_ceiling(25), 30)
+        self.assertEqual(self.bst.get_ceiling(35), 40)
+        self.assertEqual(self.bst.get_ceiling(45), 50)
+        self.assertEqual(self.bst.get_ceiling(69), 70)
+        self.assertEqual(self.bst.get_ceiling(99), None)
+        self.assertEqual(self.bst.get_ceiling(88), None)
+        self.assertEqual(self.bst.get_ceiling(77), 80)
+    
+    def test_get_floor_random(self):
+        
+        # random binary tree
+        tree_size = 1_000
+        max_key_range = 1_000
+        random_keys = []
+        for _ in range(tree_size):
+            rand_key = randrange(0, max_key_range)
+            random_keys.append(rand_key)
+            self.bst.put(rand_key, str(rand_key))
+        
+        # pick random key (not necessarily in the bst)
+        k = randrange(0, max_key_range)
+        # save result
+        result = self.bst.get_floor(k)
+        
+        # check for None
+        min_key = min(random_keys)
+        if result is None:
+            self.assertLess(k, min_key)
+            return
+
+        if k < min_key:
+            self.assertIsNone(result)
+            return
+        
+        max_key = max(random_keys)
+        if k >= max_key:
+            self.assertEqual(result, max_key)
+            return
+        
+        # expected is not None
+        # keep unique keys and sort them to check 
+        random_keys = sorted(list(set(random_keys)))
+        result_index = random_keys.index(result)
+        
+        # find lower and upper bounds for assertion
+        lower_bound = random_keys[result_index]
+        upper_index = min(result_index + 1, tree_size-1)
+        upper_bound = random_keys[upper_index]
+
+        self.assertGreaterEqual(result, lower_bound)
+        self.assertLess(result, upper_bound)
+        
+    def test_get_ceiling_random(self):
+        
+        # random binary tree
+        tree_size = 1_000
+        max_key_range = 1_000
+        random_keys = []
+        for _ in range(tree_size):
+            rand_key = randrange(0, max_key_range)
+            random_keys.append(rand_key)
+            self.bst.put(rand_key, str(rand_key))
+        
+        # pick random key (not necessarily in the bst)
+        k = randrange(0, max_key_range)
+        # save result
+        result = self.bst.get_ceiling(k)
+        
+        # check for None
+        max_key = max(random_keys)
+        if result is None:
+            self.assertGreater(k, max_key)
+            return
+
+        if k > max_key:
+            self.assertIsNone(result)
+            return
+        
+        min_key = min(random_keys)
+        if k <= min_key:
+            self.assertEqual(result, min_key)
+            return
+        
+        # expected is not None
+        # keep unique keys and sort them to check 
+        random_keys = sorted(list(set(random_keys)))
+        result_index = random_keys.index(result)
+        
+        # find lower and upper bounds for assertion
+        lower_index = max(0, result_index-1)
+        upper_index = result_index
+        
+        lower_bound = random_keys[lower_index]
+        upper_bound = random_keys[upper_index]
+
+        self.assertGreater(result, lower_bound)
+        self.assertLessEqual(result, upper_bound)
+        
 if __name__ == '__main__':
     unittest.main()

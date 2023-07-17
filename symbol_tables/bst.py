@@ -375,28 +375,27 @@ class BST:
 
     def del_min(self):
         """
-        Removes and return the smallest key from the BST:
+        Removes the smallest key from the BST:
         1) finds the minimum node
-        2) replace the link to that node, ie `parent.left`, by its right link
+        2) replace the link to that node by its right link
         """
-        min_node = self._get_min_node(self.root)
+        if self.is_empty:
+            raise KeyError("BST is empty.")
 
-        if min_node is None:
-            raise KeyError("Tree is empty.")
-
-        parent_node = min_node.parent
-        right_subtree = min_node.right
-
-        if parent_node is None:  # edge case: root is the min
-            self.root = right_subtree
-        else:
-            parent_node.left = right_subtree
-
-        # update parent of the right subtree
-        if right_subtree is not None:
-            right_subtree.parent = parent_node
-
-        return min_node
+        self.root = self._del_min(self.root)
+        
+    def _del_min(self, node):
+        # if given node is the smallest
+        if node.left is None:
+            # replace the node with its right link
+            return node.right
+        
+        # ELSE: recurse for next smaller node
+        node.left = self._del_min(node.left)
+        
+         # update size: 1 (self) + size(left) + size(right)
+        node.size = 1 + self._size(node.left) + self._size(node.right)
+        return node
 
     def del_key(self, k):
         """
@@ -884,8 +883,8 @@ class TestsBST(unittest.TestCase):
         # tree should be empty
         with self.assertRaises(KeyError):
             self.bst.del_max()
-
-    def _test_del_min(self):
+    
+    def test_del_min(self):
         with self.assertRaises(KeyError):
             self.bst.del_min()
 
@@ -900,9 +899,8 @@ class TestsBST(unittest.TestCase):
         #      (4)
 
         # min == 2
-        expected = self.bst._get_node_at(2)
-        deleted = self.bst.del_min()
-        self.assertEqual(expected, deleted)
+        self.bst.del_min()
+        self.assertFalse(self.bst.contains(2))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 3
@@ -910,9 +908,8 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # min == 4
-        expected = self.bst._get_node_at(4)
-        deleted = self.bst.del_min()
-        self.assertEqual(expected, deleted)
+        self.bst.del_min()
+        self.assertFalse(self.bst.contains(4))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 2
@@ -920,9 +917,8 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # min == 5
-        expected = self.bst._get_node_at(5)
-        deleted = self.bst.del_min()
-        self.assertEqual(expected, deleted)
+        self.bst.del_min()
+        self.assertFalse(self.bst.contains(5))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 1
@@ -930,10 +926,10 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # min == 7
-        expected = self.bst._get_node_at(7)
-        deleted = self.bst.del_min()
-        self.assertEqual(expected, deleted)
+        self.bst.del_min()
+        self.assertFalse(self.bst.contains(7))
         self.assertOrderingProperty(self.bst.root)
+        self.assertTrue(self.bst.is_empty)
 
         # tree should be empty
         with self.assertRaises(KeyError):

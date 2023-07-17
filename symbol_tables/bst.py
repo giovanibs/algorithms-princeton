@@ -74,16 +74,38 @@ class BST:
         def __repr__(self) -> str:
             return str(self.key)
 
-    def get_value(self, k):
+    @property
+    def is_empty(self):
         """
-        Returns the value property of the `_Node` at given key `k`.
+        Returns `True` if the BST is empty, `False` otherwise.
         """
+        return self._size(self.root) == 0
+    
+    def size(self, k=None):
+        """
+        Returns the size of _Node at `k`.
+        If `k` is not given, returns size of the root, i.e. entire tree size.
+        """
+        if k is None:
+            return self._size(self.root)
+            
         node = self._get_node_at(k)
-        return None if node is None else node.val
+        return self._size(node)
 
+    def _size(self, node):
+        """
+        Returns the size of the subtree rooted at given _Node `node`.
+        """
+        if node is None:
+            return 0
+
+        return node.size
+    
     def _get_node_at(self, k):
         """
         Returns the _Node object at the given key `k`.
+        
+        If the BST does not contain `k`, returns `None`.
         """
         node = self.root
 
@@ -96,6 +118,26 @@ class BST:
                 return node
 
         return None
+        
+    def get(self, k):
+        """
+        Returns the value associated with the given key `k`.
+        
+        If `k` is not in the BST, return None.
+        """
+        node = self._get_node_at(k)
+        
+        if node is None:
+            return None
+        else:
+            return node.val
+        
+    def contains(self, k):
+        """
+        Returns `True` if given key `k` is in the BST.
+        `False` otherwise.
+        """
+        return self.get(k) is not None
 
     def _get_parent_node(self, k):
         """
@@ -262,16 +304,6 @@ class BST:
         else:
             return smaller_ceiling
 
-    def get_size(self, k):
-        node = self._get_node_at(k)
-        return self._size(node)
-
-    def _size(self, node):
-        if node is None:
-            return 0
-
-        return node.size
-
     def get_rank(self, k):
         """
         In a binary search tree (BST), the "rank" of a node refers to its
@@ -383,38 +415,85 @@ class TestsBST(unittest.TestCase):
     def setUp(self) -> None:
         self.bst = BST()
 
-    def test_get_value_existing_key(self):
+    def test_size(self):
+        # tree is empty
+        self.assertTrue(self.bst.is_empty)
+        self.assertEqual(self.bst.size(), 0)
+        
+        self.bst.put(50, 50)
+        self.assertEqual(self.bst.size(50), 1)
+        self.bst.put(70, 70)
+        self.assertEqual(self.bst.size(50), 2)
+        self.assertEqual(self.bst.size(70), 1)
+        self.bst.put(30, 30)
+        self.assertEqual(self.bst.size(50), 3)
+        self.assertEqual(self.bst.size(70), 1)
+        self.assertEqual(self.bst.size(30), 1)
+        self.bst.put(10, 10)
+        self.assertEqual(self.bst.size(50), 4)
+        self.assertEqual(self.bst.size(70), 1)
+        self.assertEqual(self.bst.size(30), 2)
+        self.assertEqual(self.bst.size(10), 1)
+        self.bst.put(80, 80)
+        self.assertEqual(self.bst.size(50), 5)
+        self.assertEqual(self.bst.size(70), 2)
+        self.assertEqual(self.bst.size(30), 2)
+        self.assertEqual(self.bst.size(10), 1)
+        self.assertEqual(self.bst.size(80), 1)
+        self.bst.put(40, 40)
+        self.assertEqual(self.bst.size(50), 6)
+        self.assertEqual(self.bst.size(70), 2)
+        self.assertEqual(self.bst.size(30), 3)
+        self.assertEqual(self.bst.size(10), 1)
+        self.assertEqual(self.bst.size(80), 1)
+        self.assertEqual(self.bst.size(40), 1)
+
+    def test_get_existing_key(self):
         self.bst.put(5, "apple")
         self.bst.put(2, "banana")
         self.bst.put(7, "cherry")
 
-        result = self.bst.get_value(2)
+        result = self.bst.get(2)
         self.assertEqual(result, "banana")
         self.assertOrderingProperty(self.bst.root)
 
-    def test_get_value_nonexistent_key(self):
+    def test_get_nonexistent_key(self):
         self.bst.put(5, "apple")
         self.bst.put(2, "banana")
         self.bst.put(7, "cherry")
 
-        result = self.bst.get_value(9)
+        result = self.bst.get(9)
         self.assertEqual(result, None)
 
-    def test_get_value_empty_tree(self):
-        result = self.bst.get_value(5)
+    def test_get_empty_tree(self):
+        result = self.bst.get(5)
         self.assertEqual(result, None)
 
+    def test_contains(self):
+        # empty tree contains no key
+        self.assertFalse(self.bst.contains(1))
+        
+        self.bst.put(5, "apple")
+        self.assertTrue(self.bst.contains(5))
+        
+        self.bst.put(2, "banana")
+        self.assertTrue(self.bst.contains(2))
+        
+        self.bst.put(7, "cherry")
+        self.assertTrue(self.bst.contains(7))
+
+        
     def test_put_new_key(self):
         self.bst.put(5, "apple")
 
-        result = self.bst.get_value(5)
+        result = self.bst.get(5)
         self.assertEqual(result, "apple")
 
     def test_put_duplicate_key(self):
         self.bst.put(5, "apple")
         self.bst.put(5, "banana")
 
-        result = self.bst.get_value(5)
+        result = self.bst.get(5)
         self.assertEqual(result, "banana")
 
     def test_put_multiple_keys(self):
@@ -423,14 +502,14 @@ class TestsBST(unittest.TestCase):
         self.bst.put(7, "cherry")
         self.bst.put(4, "date")
 
-        result = self.bst.get_value(4)
+        result = self.bst.get(4)
         self.assertEqual(result, "date")
 
-    def test_put_and_get_value_large_tree(self):
+    def test_put_and_get_large_tree(self):
         for i in range(1, 101):
             self.bst.put(i, str(i))
 
-        result = self.bst.get_value(77)
+        result = self.bst.get(77)
         self.assertEqual(result, "77")
         self.assertOrderingProperty(self.bst.root)
 
@@ -687,35 +766,6 @@ class TestsBST(unittest.TestCase):
         self.assertGreater(result, lower_bound)
         self.assertLessEqual(result, upper_bound)
 
-    def test_get_size(self):
-        self.bst.put(50, 50)
-        self.assertEqual(self.bst.get_size(50), 1)
-        self.bst.put(70, 70)
-        self.assertEqual(self.bst.get_size(50), 2)
-        self.assertEqual(self.bst.get_size(70), 1)
-        self.bst.put(30, 30)
-        self.assertEqual(self.bst.get_size(50), 3)
-        self.assertEqual(self.bst.get_size(70), 1)
-        self.assertEqual(self.bst.get_size(30), 1)
-        self.bst.put(10, 10)
-        self.assertEqual(self.bst.get_size(50), 4)
-        self.assertEqual(self.bst.get_size(70), 1)
-        self.assertEqual(self.bst.get_size(30), 2)
-        self.assertEqual(self.bst.get_size(10), 1)
-        self.bst.put(80, 80)
-        self.assertEqual(self.bst.get_size(50), 5)
-        self.assertEqual(self.bst.get_size(70), 2)
-        self.assertEqual(self.bst.get_size(30), 2)
-        self.assertEqual(self.bst.get_size(10), 1)
-        self.assertEqual(self.bst.get_size(80), 1)
-        self.bst.put(40, 40)
-        self.assertEqual(self.bst.get_size(50), 6)
-        self.assertEqual(self.bst.get_size(70), 2)
-        self.assertEqual(self.bst.get_size(30), 3)
-        self.assertEqual(self.bst.get_size(10), 1)
-        self.assertEqual(self.bst.get_size(80), 1)
-        self.assertEqual(self.bst.get_size(40), 1)
-
     def test_get_rank(self):
         self.bst.put(50, 50)
         self.assertEqual(self.bst.get_rank(50), 1)
@@ -802,7 +852,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 3
-        new_size = self.bst.get_size(5)
+        new_size = self.bst.size(5)
         self.assertEqual(expected_size, new_size)
 
         # max == 5
@@ -812,7 +862,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 2
-        new_size = self.bst.get_size(2)
+        new_size = self.bst.size(2)
         self.assertEqual(expected_size, new_size)
 
         # max == 4
@@ -822,7 +872,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 1
-        new_size = self.bst.get_size(2)
+        new_size = self.bst.size(2)
         self.assertEqual(expected_size, new_size)
 
         # max == 2
@@ -856,7 +906,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 3
-        new_size = self.bst.get_size(5)
+        new_size = self.bst.size(5)
         self.assertEqual(expected_size, new_size)
 
         # min == 4
@@ -866,7 +916,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 2
-        new_size = self.bst.get_size(5)
+        new_size = self.bst.size(5)
         self.assertEqual(expected_size, new_size)
 
         # min == 5
@@ -876,7 +926,7 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 1
-        new_size = self.bst.get_size(7)
+        new_size = self.bst.size(7)
         self.assertEqual(expected_size, new_size)
 
         # min == 7

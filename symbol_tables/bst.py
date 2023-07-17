@@ -84,21 +84,32 @@ class BST:
         
         return None
     
+    def _get_parent_node(self, k):
+        """
+        Returns the parent _Node object of the _Node at `k`.
+        """
+        node = self._get_node_at(k)
+        
+        if node is None:
+            raise KeyError("Given key is not in the tree.")
+        
+        return node.parent
+    
     def put(self, k, v):
         self.root = self._put(self.root, k, v)
     
-    def _put(self, node, k, v):
+    def _put(self, node, k, v, parent=None):
         
         if node is None:
-            return self._Node(k, v)
+            return self._Node(k, v, parent=parent)
         
         if k < node.key:
             # insert to the left
-            node.left = self._put(node.left, k, v)
+            node.left = self._put(node.left, k, v, parent=node)
         
         elif k > node.key:
             # insert to the right
-            node.right = self._put(node.right, k, v)
+            node.right = self._put(node.right, k, v, parent=node)
             
         else:   # just update node's value, no subtree resizing
             node.value = v
@@ -295,25 +306,24 @@ class BST:
             )
     
     def del_max(self):
-        max_node = self._get_max_node()
+        """
+        Removes the largest key from the BST.
+        """
+        raise NotImplementedError
         
-        if max_node is None:
-            pass
-            
-    
     def del_key(self, k):
         """
-        
         """
         raise NotImplementedError
     
     class _Node:
-        def __init__(self, key, value, left=None, right=None):
+        def __init__(self, key, value, left=None, right=None, parent=None):
             self.key    = key
             self.value  = value
             self.left   = left
             self.right  = right
             self.size   = 1         # subtree size with this node as its root
+            self.parent = parent
             
         def __repr__(self) -> str:
             return str(self.key)
@@ -690,7 +700,37 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_rank(50), 4)
         self.assertEqual(self.bst.get_rank(70), 5)
         self.assertEqual(self.bst.get_rank(80), 6)
+    
+    def test_get_parent_node(self):
+        self.bst.put(5, 'apple')
+        self.bst.put(2, 'banana')
+        self.bst.put(7, 'cherry')
+        self.bst.put(4, 'date')
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        # /   \
+        #      (4)
         
+        # parent of the root is itself
+        parent = self.bst._get_parent_node(5)
+        expected = None
+        self.assertEqual(parent, expected)
+          
+        parent = self.bst._get_parent_node(2)
+        expected = self.bst._get_node_at(5)
+        self.assertEqual(parent, expected)
+          
+        parent = self.bst._get_parent_node(7)
+        expected = self.bst._get_node_at(5)
+        self.assertEqual(parent, expected)
+          
+        parent = self.bst._get_parent_node(4)
+        expected = self.bst._get_node_at(2)
+        self.assertEqual(parent, expected)
         
+        with self.assertRaises(KeyError):
+            self.bst._get_parent_node(1)
+            
 if __name__ == '__main__':
     unittest.main()

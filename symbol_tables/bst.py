@@ -108,27 +108,40 @@ class BST:
             
         return node
 
-    def get_max(self):
-        if self.root == None:
+    def get_max_key(self):
+        
+        max_node = self._get_max_node(self.root)
+        
+        if max_node == None:
             return None
         
-        current_node = self.root
-        
-        while current_node.right is not None:
-            current_node = current_node.right
-            
-        return current_node.key
+        return max_node.key
     
-    def get_min(self):
-        if self.root == None:
+    def _get_max_node(self, subtree):
+        if subtree == None:
             return None
         
-        current_node = self.root
+        if subtree.right == None:
+            return subtree
         
-        while current_node.left is not None:
-            current_node = current_node.left
-            
-        return current_node.key
+        return self._get_max_node(subtree.right)
+    
+    def get_min_key(self):
+        min_node = self._get_min_node(self.root)
+        
+        if min_node == None:
+            return None
+        
+        return min_node.key
+    
+    def _get_min_node(self, subtree):
+        if subtree == None:
+            return None
+        
+        if subtree.left == None:
+            return subtree
+        
+        return self._get_min_node(subtree.left)
     
     def get_floor(self, k):
         """
@@ -277,7 +290,17 @@ class BST:
                 + self._rank(k, right_subtree)
             )
     
+    def del_max(self):
+        max_node = self._get_max_node()
+        
+        if max_node is None:
+            pass
+            
+    
     def del_key(self, k):
+        """
+        
+        """
         raise NotImplementedError
     
     class _Node:
@@ -376,88 +399,88 @@ class TestsBST(unittest.TestCase):
             self.assertGreater(right_subtree.key, node.key)
             self.assertOrderingProperty(right_subtree)
 
-    def test_get_max(self):
+    def test_get_max_key(self):
         
         # empty tree
         expected = None
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
         # 1 node
         self.bst.put(5, 'apple')
         expected = 5
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
         self.bst.put(2, 'banana')
         expected = 5
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
         self.bst.put(7, 'cherry')
         expected = 7
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
         self.bst.put(4, 'date')
         expected = 7
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
         self.bst.put(9, 'eggplant')
         expected = 9
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
-    def test_get_max_random_tests(self):
+    def test_get_max_key_random_tests(self):
         random_keys = [randint(0, 1_000) for _ in range(100)]
         for key in random_keys:
             self.bst.put(key, str(key))
         
         expected = max(random_keys)
-        result = self.bst.get_max()
+        result = self.bst.get_max_key()
         self.assertEqual(expected, result)
         
-    def test_get_min(self):
+    def test_get_min_key(self):
         
         # empty tree
         expected = None
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
         # 1 node
         self.bst.put(5, 'apple')
         expected = 5
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
         self.bst.put(2, 'banana')
         expected = 2
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
         self.bst.put(1, 'cherry')
         expected = 1
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
         self.bst.put(4, 'date')
         expected = 1
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
         self.bst.put(9, 'eggplant')
         expected = 1
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
-    def test_get_min_random_tests(self):
+    def test_get_min_key_random_tests(self):
         random_keys = [randint(0, 1_000) for _ in range(100)]
         for key in random_keys:
             self.bst.put(key, str(key))
         
         expected = min(random_keys)
-        result = self.bst.get_min()
+        result = self.bst.get_min_key()
         self.assertEqual(expected, result)
         
     def test_get_floor(self):

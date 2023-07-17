@@ -62,6 +62,16 @@ class BST:
         self.root = None
     
     def get_value(self, k):
+        """
+        Returns the value property of the `_Node` at given key `k`.
+        """
+        node = self._get_node_at(k)
+        return None if node is None else node.value
+    
+    def _get_node_at(self, k):
+        """
+        Returns the _Node object at the given key `k`.
+        """
         node = self.root
         
         while node is not None:
@@ -70,7 +80,7 @@ class BST:
             elif k > node.key:
                 node = node.right
             else:
-                return node.value
+                return node
         
         return None
     
@@ -82,12 +92,19 @@ class BST:
         if node is None:
             return self._Node(k, v)
         
-        if k < node.key:                        # insert to the left
+        if k < node.key:
+            # insert to the left
             node.left = self._put(node.left, k, v)
-        elif k > node.key:                      # insert to the right
+        
+        elif k > node.key:
+            # insert to the right
             node.right = self._put(node.right, k, v)
-        else:                                   # node.key == v
+            
+        else:   # just update node's value, no subtree resizing
             node.value = v
+        
+        # update node size based on its children
+        node.size = 1 + self._size(node.left) + self._size(node.right)
             
         return node
 
@@ -209,9 +226,56 @@ class BST:
             return subtree
         else:
             return smaller_ceiling
+    
+    def get_size(self, k):
+        node = self._get_node_at(k)
+        return self._size(node)
+    
+    def _size(self, node):
+        if node is None:
+            return 0
+        
+        return node.size
         
     def get_rank(self, k):
-        raise NotImplementedError
+        """
+        How many keys are less than the given key?
+        """
+        return self._rank(k, self.root)
+    
+    def _rank(self, k, subtree_root):
+        """
+        Returns the rank of the `_Node` object at given key `k`
+        in a given subtree with root `subtree_root`:
+        
+        1) If the _Node for the given key is the same as the given
+        `subtree_root`, the rank of `k` is the rank of the `subtree_root`,
+        which is all elements to the left of it.
+        
+        2) If `k < subtree_node.key`, `k` is in the left subtree,
+        i.e. `subtree_root = subtree_root.left`.
+        
+        3) If `k > subtree_node.key`, then `k` is in the right subtree.
+        Here, the rank of `k` will be the sum of:
+                - `1` (to count the key at the subtree_root).
+                - keys in the left subtree (i.e. size of `subtree_root.left`).
+                - rank of `k` in the right subtree (i.e. recursive call to `_rank`).
+        """
+        if subtree_root is None:
+            return 0
+        
+        if k == subtree_root.key:
+            return 1 + self._size(subtree_root.left)
+        
+        if k < subtree_root.key:
+            return self._rank(k, subtree_root.left)
+        
+        if k > subtree_root.key:
+            right_subtree = subtree_root.right
+            return (1
+                + self._size(subtree_root.left)
+                + self._rank(k, right_subtree)
+            )
     
     def del_key(self, k):
         raise NotImplementedError
@@ -222,6 +286,7 @@ class BST:
             self.value  = value
             self.left   = left
             self.right  = right
+            self.size   = 1         # subtree size with this node as its root
             
         def __repr__(self) -> str:
             return str(self.key)
@@ -540,6 +605,65 @@ class TestsBST(unittest.TestCase):
 
         self.assertGreater(result, lower_bound)
         self.assertLessEqual(result, upper_bound)
+        
+    def test_get_size(self):
+        self.bst.put(50, 50)
+        self.assertEqual(self.bst.get_size(50), 1)
+        self.bst.put(70, 70)
+        self.assertEqual(self.bst.get_size(50), 2)
+        self.assertEqual(self.bst.get_size(70), 1)
+        self.bst.put(30, 30)
+        self.assertEqual(self.bst.get_size(50), 3)
+        self.assertEqual(self.bst.get_size(70), 1)
+        self.assertEqual(self.bst.get_size(30), 1)
+        self.bst.put(10, 10)
+        self.assertEqual(self.bst.get_size(50), 4)
+        self.assertEqual(self.bst.get_size(70), 1)
+        self.assertEqual(self.bst.get_size(30), 2)
+        self.assertEqual(self.bst.get_size(10), 1)
+        self.bst.put(80, 80)
+        self.assertEqual(self.bst.get_size(50), 5)
+        self.assertEqual(self.bst.get_size(70), 2)
+        self.assertEqual(self.bst.get_size(30), 2)
+        self.assertEqual(self.bst.get_size(10), 1)
+        self.assertEqual(self.bst.get_size(80), 1)
+        self.bst.put(40, 40)
+        self.assertEqual(self.bst.get_size(50), 6)
+        self.assertEqual(self.bst.get_size(70), 2)
+        self.assertEqual(self.bst.get_size(30), 3)
+        self.assertEqual(self.bst.get_size(10), 1)
+        self.assertEqual(self.bst.get_size(80), 1)
+        self.assertEqual(self.bst.get_size(40), 1)
+        
+    def test_get_rank(self):
+        self.bst.put(50, 50)
+        self.assertEqual(self.bst.get_rank(50), 1)
+        self.bst.put(70, 70)
+        self.assertEqual(self.bst.get_rank(50), 1)
+        self.assertEqual(self.bst.get_rank(70), 2)
+        self.bst.put(30, 30)
+        self.assertEqual(self.bst.get_rank(30), 1)
+        self.assertEqual(self.bst.get_rank(50), 2)
+        self.assertEqual(self.bst.get_rank(70), 3)
+        self.bst.put(10, 10)
+        self.assertEqual(self.bst.get_rank(10), 1)
+        self.assertEqual(self.bst.get_rank(30), 2)
+        self.assertEqual(self.bst.get_rank(50), 3)
+        self.assertEqual(self.bst.get_rank(70), 4)
+        self.bst.put(80, 80)
+        self.assertEqual(self.bst.get_rank(10), 1)
+        self.assertEqual(self.bst.get_rank(30), 2)
+        self.assertEqual(self.bst.get_rank(50), 3)
+        self.assertEqual(self.bst.get_rank(70), 4)
+        self.assertEqual(self.bst.get_rank(80), 5)
+        self.bst.put(40, 40)
+        self.assertEqual(self.bst.get_rank(10), 1)
+        self.assertEqual(self.bst.get_rank(30), 2)
+        self.assertEqual(self.bst.get_rank(40), 3)
+        self.assertEqual(self.bst.get_rank(50), 4)
+        self.assertEqual(self.bst.get_rank(70), 5)
+        self.assertEqual(self.bst.get_rank(80), 6)
+        
         
 if __name__ == '__main__':
     unittest.main()

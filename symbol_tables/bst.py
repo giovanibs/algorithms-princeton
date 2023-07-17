@@ -252,7 +252,10 @@ class BST:
         
     def get_rank(self, k):
         """
-        How many keys are less than the given key?
+        In a binary search tree (BST), the "rank" of a node refers to its
+        position within the BST when the nodes are arranged in ascending
+        order. In other words, the rank of a node represents the number
+        of nodes that are less than or equal to that node.
         """
         return self._rank(k, self.root)
     
@@ -285,7 +288,8 @@ class BST:
         
         if k > subtree_root.key:
             right_subtree = subtree_root.right
-            return (1
+            return (
+                1
                 + self._size(subtree_root.left)
                 + self._rank(k, right_subtree)
             )

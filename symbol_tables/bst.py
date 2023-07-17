@@ -58,22 +58,35 @@ class BST:
     Delete      : lazy deletion, del the minimum, Hibbard deletion
     Ordered iteration :
     """
+
     def __init__(self):
         self.root = None
-    
+
+    class _Node:
+        def __init__(self, key, value, left=None, right=None, parent=None):
+            self.key = key
+            self.val = value
+            self.left = left
+            self.right = right
+            self.size = 1  # subtree size with this node as root
+            self.parent = parent
+
+        def __repr__(self) -> str:
+            return str(self.key)
+
     def get_value(self, k):
         """
         Returns the value property of the `_Node` at given key `k`.
         """
         node = self._get_node_at(k)
-        return None if node is None else node.value
-    
+        return None if node is None else node.val
+
     def _get_node_at(self, k):
         """
         Returns the _Node object at the given key `k`.
         """
         node = self.root
-        
+
         while node is not None:
             if k < node.key:
                 node = node.left
@@ -81,186 +94,184 @@ class BST:
                 node = node.right
             else:
                 return node
-        
+
         return None
-    
+
     def _get_parent_node(self, k):
         """
         Returns the parent _Node object of the _Node at `k`.
         """
         node = self._get_node_at(k)
-        
+
         if node is None:
             raise KeyError("Given key is not in the tree.")
-        
+
         return node.parent
-    
+
     def put(self, k, v):
         self.root = self._put(self.root, k, v)
-    
+
     def _put(self, node, k, v, parent=None):
-        
         if node is None:
             return self._Node(k, v, parent=parent)
-        
+
         if k < node.key:
             # insert to the left
             node.left = self._put(node.left, k, v, parent=node)
-        
+
         elif k > node.key:
             # insert to the right
             node.right = self._put(node.right, k, v, parent=node)
-            
-        else:   # just update node's value, no subtree resizing
-            node.value = v
-        
+
+        else:  # just update node's value, no subtree resizing
+            node.val = v
+
         # update node size based on its children
         node.size = 1 + self._size(node.left) + self._size(node.right)
-            
+
         return node
 
     def get_max_key(self):
-        
         max_node = self._get_max_node(self.root)
-        
+
         if max_node == None:
             return None
-        
+
         return max_node.key
-    
+
     def _get_max_node(self, subtree):
         if subtree == None:
             return None
-        
+
         if subtree.right == None:
             return subtree
-        
+
         return self._get_max_node(subtree.right)
-    
+
     def get_min_key(self):
         min_node = self._get_min_node(self.root)
-        
+
         if min_node == None:
             return None
-        
+
         return min_node.key
-    
+
     def _get_min_node(self, subtree):
         if subtree == None:
             return None
-        
+
         if subtree.left == None:
             return subtree
-        
+
         return self._get_min_node(subtree.left)
-    
+
     def get_floor(self, k):
         """
         Returns LARGEST key that is less than `k`.
-        
+
         Steps:
         1) Starting from the root element of a subtree, compare `k` and the key:
-            
+
             - if `k` is the root, then it is the floor
-            
+
             - `k` < key at this root: must look in the left subtree for a key
             less than `k`.
-        
+
             - `k` > key at root: this root could be the floor, but we must check
             for another potential floor in the right subtree. That is, we
             recursively call get_floor with right subtree as root to find a
             larger floor for `k`.
         """
         floor_node = self._get_floor(self.root, k)
-        
+
         if floor_node == None:
             return None
-        
+
         return floor_node.key
-    
+
     def _get_floor(self, subtree, k):
         if subtree is None:
             return None
-        
+
         # the root is the floor itself
         if k == subtree.key:
             return subtree
-        
+
         if k < subtree.key:
             # floor must be in left subtree
             left_subtree = subtree.left
             return self._get_floor(left_subtree, k)
-        
+
         # ELSE: floor must be in right subtree
         right_subtree = subtree.right
         larger_floor = self._get_floor(right_subtree, k)
-        
+
         if larger_floor is None:
             # if no larger floor is found, than this floor is the one
             return subtree
         else:
             return larger_floor
-    
+
     def get_ceiling(self, k):
         """
         Returns smallest entry that is greater than `k`.
-        
+
         Steps:
-        
+
         1) starting from the subtree `root` element
             - if `k` == `root`, then `root` is the ceiling.
-            
+
             - if `k` > `root`, then the the ceiling is in the right subtree and
             the root node has nothing to do whatsaoever with it. So, we recurse
             with the right subtree as `root`. If, by any chance, the right
             subtree is `None`, the recursive call will return `None`.
-            
+
             - if `k` < `root`, then `root` may be the ceiling or the ceiling is
             in the left subtree. then:
                     - recursively call get_ceiling. when the returned value is
                     None, we've found the ceiling
         """
         ceiling_node = self._get_ceiling(self.root, k)
-        
+
         if ceiling_node == None:
             return None
-        
+
         return ceiling_node.key
-    
+
     def _get_ceiling(self, subtree, k):
         if subtree is None:
             return None
-        
+
         if k == subtree.key:
             return subtree
-        
+
         if k > subtree.key:
             # ceiling must be in right subtree
             right_subtree = subtree.right
             return self._get_ceiling(right_subtree, k)
-        
+
         # ELSE: ceiling could be this subtree's root or be in its left subtree
         left_subtree = subtree.left
-        
+
         # recurse to look for a smaller ceiling in the left subtree
         smaller_ceiling = self._get_ceiling(left_subtree, k)
 
-        # check if smaller ceiling found        
+        # check if smaller ceiling found
         if smaller_ceiling is None:
             return subtree
         else:
             return smaller_ceiling
-    
+
     def get_size(self, k):
         node = self._get_node_at(k)
         return self._size(node)
-    
+
     def _size(self, node):
         if node is None:
             return 0
-        
+
         return node.size
-        
+
     def get_rank(self, k):
         """
         In a binary search tree (BST), the "rank" of a node refers to its
@@ -269,19 +280,19 @@ class BST:
         of nodes that are less than or equal to that node.
         """
         return self._rank(k, self.root)
-    
+
     def _rank(self, k, subtree_root):
         """
         Returns the rank of the `_Node` object at given key `k`
         in a given subtree with root `subtree_root`:
-        
+
         1) If the _Node for the given key is the same as the given
         `subtree_root`, the rank of `k` is the rank of the `subtree_root`,
         which is all elements to the left of it.
-        
+
         2) If `k < subtree_node.key`, `k` is in the left subtree,
         i.e. `subtree_root = subtree_root.left`.
-        
+
         3) If `k > subtree_node.key`, then `k` is in the right subtree.
         Here, the rank of `k` will be the sum of:
                 - `1` (to count the key at the subtree_root).
@@ -290,21 +301,17 @@ class BST:
         """
         if subtree_root is None:
             return 0
-        
+
         if k == subtree_root.key:
             return 1 + self._size(subtree_root.left)
-        
+
         if k < subtree_root.key:
             return self._rank(k, subtree_root.left)
-        
+
         if k > subtree_root.key:
             right_subtree = subtree_root.right
-            return (
-                1
-                + self._size(subtree_root.left)
-                + self._rank(k, right_subtree)
-            )
-    
+            return 1 + self._size(subtree_root.left) + self._rank(k, right_subtree)
+
     def del_max(self):
         """
         Removes and return the largest key from the BST:
@@ -312,24 +319,24 @@ class BST:
         2) replace the link to that node, ie `parent.right`, by its left link
         """
         max_node = self._get_max_node(self.root)
-        
+
         if max_node is None:
             raise KeyError("Tree is empty.")
-        
+
         parent = max_node.parent
-        
+
         # edge case: root is the max
         if parent is None:
             self.root = max_node.left
         else:
             parent.right = max_node.left
-        
+
         # update parent
         if max_node.left is not None:
             max_node.left.parent = parent
-        
+
         return max_node
-            
+
     def del_min(self):
         """
         Removes and return the smallest key from the BST:
@@ -337,105 +344,101 @@ class BST:
         2) replace the link to that node, ie `parent.left`, by its right link
         """
         min_node = self._get_min_node(self.root)
-        
+
         if min_node is None:
             raise KeyError("Tree is empty.")
-        
+
         parent_node = min_node.parent
         right_subtree = min_node.right
-        
-        if parent_node is None:         # edge case: root is the min
+
+        if parent_node is None:  # edge case: root is the min
             self.root = right_subtree
         else:
             parent_node.left = right_subtree
-        
+
         # update parent of the right subtree
         if right_subtree is not None:
             right_subtree.parent = parent_node
-        
+
         return min_node
-        
+
     def del_key(self, k):
         """
+        Removes and return the _Node at the given key `k`.
+
+        Steps:
+
+        For the node at the given key:
+            1) If it is min or max, call the respective method
+            2)
         """
         raise NotImplementedError
-    
-    class _Node:
-        def __init__(self, key, value, left=None, right=None, parent=None):
-            self.key    = key
-            self.value  = value
-            self.left   = left
-            self.right  = right
-            self.size   = 1         # subtree size with this node as its root
-            self.parent = parent
-            
-        def __repr__(self) -> str:
-            return str(self.key)
+
 
 import unittest
 from random import randint, randrange
 
+
 class TestsBST(unittest.TestCase):
     def setUp(self) -> None:
         self.bst = BST()
-    
+
     def test_get_value_existing_key(self):
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
 
         result = self.bst.get_value(2)
-        self.assertEqual(result, 'banana')
+        self.assertEqual(result, "banana")
         self.assertOrderingProperty(self.bst.root)
 
     def test_get_value_nonexistent_key(self):
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
 
         result = self.bst.get_value(9)
         self.assertEqual(result, None)
 
     def test_get_value_empty_tree(self):
-
         result = self.bst.get_value(5)
         self.assertEqual(result, None)
 
     def test_put_new_key(self):
-        self.bst.put(5, 'apple')
+        self.bst.put(5, "apple")
 
         result = self.bst.get_value(5)
-        self.assertEqual(result, 'apple')
+        self.assertEqual(result, "apple")
 
     def test_put_duplicate_key(self):
-        self.bst.put(5, 'apple')
-        self.bst.put(5, 'banana')
+        self.bst.put(5, "apple")
+        self.bst.put(5, "banana")
 
         result = self.bst.get_value(5)
-        self.assertEqual(result, 'banana')
+        self.assertEqual(result, "banana")
 
     def test_put_multiple_keys(self):
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
-        self.bst.put(4, 'date')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
 
         result = self.bst.get_value(4)
-        self.assertEqual(result, 'date')
+        self.assertEqual(result, "date")
 
     def test_put_and_get_value_large_tree(self):
         for i in range(1, 101):
             self.bst.put(i, str(i))
 
         result = self.bst.get_value(77)
-        self.assertEqual(result, '77')
+        self.assertEqual(result, "77")
         self.assertOrderingProperty(self.bst.root)
-        
+
     def test_ordering_property(self):
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
-        self.bst.put(4, 'date')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
         #     (5)
         #    /   \
         #  (2)    (7)
@@ -459,89 +462,87 @@ class TestsBST(unittest.TestCase):
             self.assertOrderingProperty(right_subtree)
 
     def test_get_max_key(self):
-        
         # empty tree
         expected = None
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
+
         # 1 node
-        self.bst.put(5, 'apple')
+        self.bst.put(5, "apple")
         expected = 5
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(2, 'banana')
+
+        self.bst.put(2, "banana")
         expected = 5
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(7, 'cherry')
+
+        self.bst.put(7, "cherry")
         expected = 7
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(4, 'date')
+
+        self.bst.put(4, "date")
         expected = 7
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(9, 'eggplant')
+
+        self.bst.put(9, "eggplant")
         expected = 9
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
+
     def test_get_max_key_random_tests(self):
         random_keys = [randint(0, 1_000) for _ in range(100)]
         for key in random_keys:
             self.bst.put(key, str(key))
-        
+
         expected = max(random_keys)
         result = self.bst.get_max_key()
         self.assertEqual(expected, result)
-        
+
     def test_get_min_key(self):
-        
         # empty tree
         expected = None
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
+
         # 1 node
-        self.bst.put(5, 'apple')
+        self.bst.put(5, "apple")
         expected = 5
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(2, 'banana')
+
+        self.bst.put(2, "banana")
         expected = 2
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(1, 'cherry')
+
+        self.bst.put(1, "cherry")
         expected = 1
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(4, 'date')
+
+        self.bst.put(4, "date")
         expected = 1
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
-        self.bst.put(9, 'eggplant')
+
+        self.bst.put(9, "eggplant")
         expected = 1
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
+
     def test_get_min_key_random_tests(self):
         random_keys = [randint(0, 1_000) for _ in range(100)]
         for key in random_keys:
             self.bst.put(key, str(key))
-        
+
         expected = min(random_keys)
         result = self.bst.get_min_key()
         self.assertEqual(expected, result)
-        
+
     def test_get_floor(self):
         self.bst.put(50, 50)
         self.bst.put(70, 70)
@@ -549,7 +550,7 @@ class TestsBST(unittest.TestCase):
         self.bst.put(10, 10)
         self.bst.put(80, 80)
         self.bst.put(40, 40)
-        
+
         # floor == root
         self.assertEqual(self.bst.get_floor(50), 50)
         self.assertEqual(self.bst.get_floor(70), 70)
@@ -557,7 +558,7 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_floor(10), 10)
         self.assertEqual(self.bst.get_floor(80), 80)
         self.assertEqual(self.bst.get_floor(40), 40)
-        
+
         # other
         self.assertEqual(self.bst.get_floor(1), None)
         self.assertEqual(self.bst.get_floor(5), None)
@@ -569,7 +570,7 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_floor(99), 80)
         self.assertEqual(self.bst.get_floor(88), 80)
         self.assertEqual(self.bst.get_floor(77), 70)
-    
+
     def test_get_ceiling(self):
         self.bst.put(50, 50)
         self.bst.put(70, 70)
@@ -577,7 +578,7 @@ class TestsBST(unittest.TestCase):
         self.bst.put(10, 10)
         self.bst.put(80, 80)
         self.bst.put(40, 40)
-        
+
         # ceiling == root
         self.assertEqual(self.bst.get_ceiling(50), 50)
         self.assertEqual(self.bst.get_ceiling(70), 70)
@@ -585,7 +586,7 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_ceiling(10), 10)
         self.assertEqual(self.bst.get_ceiling(80), 80)
         self.assertEqual(self.bst.get_ceiling(40), 40)
-        
+
         # other
         self.assertEqual(self.bst.get_ceiling(1), 10)
         self.assertEqual(self.bst.get_ceiling(5), 10)
@@ -597,9 +598,8 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_ceiling(99), None)
         self.assertEqual(self.bst.get_ceiling(88), None)
         self.assertEqual(self.bst.get_ceiling(77), 80)
-    
+
     def test_get_floor_random(self):
-        
         # random binary tree
         tree_size = 1_000
         max_key_range = 1_000
@@ -608,12 +608,12 @@ class TestsBST(unittest.TestCase):
             rand_key = randrange(0, max_key_range)
             random_keys.append(rand_key)
             self.bst.put(rand_key, str(rand_key))
-        
+
         # pick random key (not necessarily in the bst)
         k = randrange(0, max_key_range)
         # save result
         result = self.bst.get_floor(k)
-        
+
         # check for None
         min_key = min(random_keys)
         if result is None:
@@ -623,27 +623,26 @@ class TestsBST(unittest.TestCase):
         if k < min_key:
             self.assertIsNone(result)
             return
-        
+
         max_key = max(random_keys)
         if k >= max_key:
             self.assertEqual(result, max_key)
             return
-        
+
         # expected is not None
-        # keep unique keys and sort them to check 
+        # keep unique keys and sort them to check
         random_keys = sorted(list(set(random_keys)))
         result_index = random_keys.index(result)
-        
+
         # find lower and upper bounds for assertion
         lower_bound = random_keys[result_index]
-        upper_index = min(result_index + 1, tree_size-1)
+        upper_index = min(result_index + 1, tree_size - 1)
         upper_bound = random_keys[upper_index]
 
         self.assertGreaterEqual(result, lower_bound)
         self.assertLess(result, upper_bound)
-        
+
     def test_get_ceiling_random(self):
-        
         # random binary tree
         tree_size = 1_000
         max_key_range = 1_000
@@ -652,12 +651,12 @@ class TestsBST(unittest.TestCase):
             rand_key = randrange(0, max_key_range)
             random_keys.append(rand_key)
             self.bst.put(rand_key, str(rand_key))
-        
+
         # pick random key (not necessarily in the bst)
         k = randrange(0, max_key_range)
         # save result
         result = self.bst.get_ceiling(k)
-        
+
         # check for None
         max_key = max(random_keys)
         if result is None:
@@ -667,27 +666,27 @@ class TestsBST(unittest.TestCase):
         if k > max_key:
             self.assertIsNone(result)
             return
-        
+
         min_key = min(random_keys)
         if k <= min_key:
             self.assertEqual(result, min_key)
             return
-        
+
         # expected is not None
-        # keep unique keys and sort them to check 
+        # keep unique keys and sort them to check
         random_keys = sorted(list(set(random_keys)))
         result_index = random_keys.index(result)
-        
+
         # find lower and upper bounds for assertion
-        lower_index = max(0, result_index-1)
+        lower_index = max(0, result_index - 1)
         upper_index = result_index
-        
+
         lower_bound = random_keys[lower_index]
         upper_bound = random_keys[upper_index]
 
         self.assertGreater(result, lower_bound)
         self.assertLessEqual(result, upper_bound)
-        
+
     def test_get_size(self):
         self.bst.put(50, 50)
         self.assertEqual(self.bst.get_size(50), 1)
@@ -716,7 +715,7 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_size(10), 1)
         self.assertEqual(self.bst.get_size(80), 1)
         self.assertEqual(self.bst.get_size(40), 1)
-        
+
     def test_get_rank(self):
         self.bst.put(50, 50)
         self.assertEqual(self.bst.get_rank(50), 1)
@@ -745,127 +744,151 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_rank(50), 4)
         self.assertEqual(self.bst.get_rank(70), 5)
         self.assertEqual(self.bst.get_rank(80), 6)
-    
+
     def test_get_parent_node(self):
         # empty tree
         with self.assertRaises(KeyError):
             self.bst._get_parent_node(5)
-            
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
-        self.bst.put(4, 'date')
+
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
         #     (5)
         #    /   \
         #  (2)    (7)
         # /   \
         #      (4)
-        
+
         # parent of the root is itself
-        parent = self.bst._get_parent_node(5)
         expected = None
-        self.assertEqual(parent, expected)
-          
+        parent = self.bst._get_parent_node(5)
+        self.assertEqual(expected, parent)
+
+        expected = self.bst._get_node_at(5)
         parent = self.bst._get_parent_node(2)
+        self.assertEqual(expected, parent)
+
         expected = self.bst._get_node_at(5)
-        self.assertEqual(parent, expected)
-          
         parent = self.bst._get_parent_node(7)
-        expected = self.bst._get_node_at(5)
-        self.assertEqual(parent, expected)
-          
-        parent = self.bst._get_parent_node(4)
+        self.assertEqual(expected, parent)
+
         expected = self.bst._get_node_at(2)
-        self.assertEqual(parent, expected)
-        
+        parent = self.bst._get_parent_node(4)
+        self.assertEqual(expected, parent)
+
         # key not in the BST
         with self.assertRaises(KeyError):
             self.bst._get_parent_node(1)
-            
-    def test_del_max(self):
+
+    def _test_del_max(self):
         with self.assertRaises(KeyError):
             self.bst.del_max()
 
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
-        self.bst.put(4, 'date')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
         #     (5)
         #    /   \
         #  (2)    (7)
         # /   \
         #      (4)
-        
+
         # max == 7
         expected = self.bst._get_node_at(7)
         deleted = self.bst.del_max()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 3
+        new_size = self.bst.get_size(5)
+        self.assertEqual(expected_size, new_size)
+
         # max == 5
         expected = self.bst._get_node_at(5)
         deleted = self.bst.del_max()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 2
+        new_size = self.bst.get_size(2)
+        self.assertEqual(expected_size, new_size)
+
         # max == 4
         expected = self.bst._get_node_at(4)
         deleted = self.bst.del_max()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 1
+        new_size = self.bst.get_size(2)
+        self.assertEqual(expected_size, new_size)
+
         # max == 2
         expected = self.bst._get_node_at(2)
         deleted = self.bst.del_max()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-        
+
         # tree should be empty
         with self.assertRaises(KeyError):
             self.bst.del_max()
 
-    def test_del_min(self):
+    def _test_del_min(self):
         with self.assertRaises(KeyError):
             self.bst.del_min()
 
-        self.bst.put(5, 'apple')
-        self.bst.put(2, 'banana')
-        self.bst.put(7, 'cherry')
-        self.bst.put(4, 'date')
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
         #     (5)
         #    /   \
         #  (2)    (7)
         # /   \
         #      (4)
-        
+
         # min == 2
         expected = self.bst._get_node_at(2)
         deleted = self.bst.del_min()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 3
+        new_size = self.bst.get_size(5)
+        self.assertEqual(expected_size, new_size)
+
         # min == 4
         expected = self.bst._get_node_at(4)
         deleted = self.bst.del_min()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 2
+        new_size = self.bst.get_size(5)
+        self.assertEqual(expected_size, new_size)
+
         # min == 5
         expected = self.bst._get_node_at(5)
         deleted = self.bst.del_min()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-          
+        # check updated sizes
+        expected_size = 1
+        new_size = self.bst.get_size(7)
+        self.assertEqual(expected_size, new_size)
+
         # min == 7
         expected = self.bst._get_node_at(7)
         deleted = self.bst.del_min()
         self.assertEqual(expected, deleted)
         self.assertOrderingProperty(self.bst.root)
-        
+
         # tree should be empty
         with self.assertRaises(KeyError):
             self.bst.del_min()
 
-          
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

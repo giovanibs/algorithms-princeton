@@ -307,9 +307,53 @@ class BST:
     
     def del_max(self):
         """
-        Removes the largest key from the BST.
+        Removes and return the largest key from the BST:
+        1) finds the maximum node
+        2) replace the link to that node, ie `parent.right`, by its left link
         """
-        raise NotImplementedError
+        max_node = self._get_max_node(self.root)
+        
+        if max_node is None:
+            raise KeyError("Tree is empty.")
+        
+        parent = max_node.parent
+        
+        # edge case: root is the max
+        if parent is None:
+            self.root = max_node.left
+        else:
+            parent.right = max_node.left
+        
+        # update parent
+        if max_node.left is not None:
+            max_node.left.parent = parent
+        
+        return max_node
+            
+    def del_min(self):
+        """
+        Removes and return the smallest key from the BST:
+        1) finds the minimum node
+        2) replace the link to that node, ie `parent.left`, by its right link
+        """
+        min_node = self._get_min_node(self.root)
+        
+        if min_node is None:
+            raise KeyError("Tree is empty.")
+        
+        parent_node = min_node.parent
+        right_subtree = min_node.right
+        
+        if parent_node is None:         # edge case: root is the min
+            self.root = right_subtree
+        else:
+            parent_node.left = right_subtree
+        
+        # update parent of the right subtree
+        if right_subtree is not None:
+            right_subtree.parent = parent_node
+        
+        return min_node
         
     def del_key(self, k):
         """
@@ -342,6 +386,7 @@ class TestsBST(unittest.TestCase):
 
         result = self.bst.get_value(2)
         self.assertEqual(result, 'banana')
+        self.assertOrderingProperty(self.bst.root)
 
     def test_get_value_nonexistent_key(self):
         self.bst.put(5, 'apple')
@@ -702,6 +747,10 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.get_rank(80), 6)
     
     def test_get_parent_node(self):
+        # empty tree
+        with self.assertRaises(KeyError):
+            self.bst._get_parent_node(5)
+            
         self.bst.put(5, 'apple')
         self.bst.put(2, 'banana')
         self.bst.put(7, 'cherry')
@@ -729,8 +778,94 @@ class TestsBST(unittest.TestCase):
         expected = self.bst._get_node_at(2)
         self.assertEqual(parent, expected)
         
+        # key not in the BST
         with self.assertRaises(KeyError):
             self.bst._get_parent_node(1)
             
+    def test_del_max(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_max()
+
+        self.bst.put(5, 'apple')
+        self.bst.put(2, 'banana')
+        self.bst.put(7, 'cherry')
+        self.bst.put(4, 'date')
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        # /   \
+        #      (4)
+        
+        # max == 7
+        expected = self.bst._get_node_at(7)
+        deleted = self.bst.del_max()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # max == 5
+        expected = self.bst._get_node_at(5)
+        deleted = self.bst.del_max()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # max == 4
+        expected = self.bst._get_node_at(4)
+        deleted = self.bst.del_max()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # max == 2
+        expected = self.bst._get_node_at(2)
+        deleted = self.bst.del_max()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+        
+        # tree should be empty
+        with self.assertRaises(KeyError):
+            self.bst.del_max()
+
+    def test_del_min(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_min()
+
+        self.bst.put(5, 'apple')
+        self.bst.put(2, 'banana')
+        self.bst.put(7, 'cherry')
+        self.bst.put(4, 'date')
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        # /   \
+        #      (4)
+        
+        # min == 2
+        expected = self.bst._get_node_at(2)
+        deleted = self.bst.del_min()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # min == 4
+        expected = self.bst._get_node_at(4)
+        deleted = self.bst.del_min()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # min == 5
+        expected = self.bst._get_node_at(5)
+        deleted = self.bst.del_min()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+          
+        # min == 7
+        expected = self.bst._get_node_at(7)
+        deleted = self.bst.del_min()
+        self.assertEqual(expected, deleted)
+        self.assertOrderingProperty(self.bst.root)
+        
+        # tree should be empty
+        with self.assertRaises(KeyError):
+            self.bst.del_min()
+
+          
 if __name__ == '__main__':
     unittest.main()

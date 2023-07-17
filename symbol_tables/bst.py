@@ -399,16 +399,79 @@ class BST:
 
     def del_key(self, k):
         """
-        Removes and return the _Node at the given key `k`.
-
-        Steps:
-
-        For the node at the given key:
-            1) If it is min or max, call the respective method
-            2)
+        Removes _Node at the given key `k`.
         """
-        raise NotImplementedError
+        if not self.contains(k):
+            raise KeyError(f"This BST does not contain `{k}`.")
+        
+        self.root = self._del_key(k, self.root)
 
+    def _del_key(self, k, node):
+        """
+        Deleted node replacement:
+        
+        ### CASE 1: node has only 1 child
+            Replace the deleted node with its child.
+        
+        ### CASE 2: node has both children -> apply Hibbard's:
+            
+            Delete a node by replacing it with its successor. The successor
+            is the node with the smallest key in its right subtree.
+            
+            Steps:
+            
+            1) Save a link to the node to be deleted (aux_node)
+            
+            2) Set node to point to its successor _min(aux_node.right).
+            
+            3) Set the right link of node (which is supposed to point to
+            the BST containing all the keys larger than node.key) to
+            del_min(aux_node.right), the link to the BST containing all
+            the keys that are larger than node.key after the deletion.
+
+            4) Set the left link of node (which was None) to aux_node.left
+            (all the keys that are less than both the deleted key and its
+            successor).
+        """
+        if node is None:
+            return None
+        
+        if k < node.key:
+            node.left = self._del_key(k, node.left)
+        
+        elif k > node.key:
+            node.right = self._del_key(k, node.right)
+        
+        else: # k == node.key
+            
+            ### CASE 1: node has 1 or no child:
+            # 1.1
+            if node.right is None:
+                return node.left
+            # 1.2
+            if node.left is None:
+                return node.right
+            
+            ### CASE 2
+            
+            # 1) save object reference
+            deleted_node = node
+            
+            # 2) pick its sucessor. `node` now is the successor.
+            node = self._get_min_node(deleted_node.right)
+            
+            # 3) Set the right link of the new node to the link to the BST
+            # containing all the keys that are larger than node.key
+            # after the deletion
+            node.right = self._del_min(deleted_node.right)
+            
+            # 4) Set the left link of the NEW NODE (which was None)
+            # to aux_node.left
+            node.left = deleted_node.left
+        
+        # update size
+        node.size = 1 + self._size(node.left) + self._size(node.right)
+        return node
 
 import unittest
 from random import randint, randrange
@@ -945,6 +1008,80 @@ class TestsBST(unittest.TestCase):
         # tree should be empty
         with self.assertRaises(KeyError):
             self.bst.del_min()
+    
+    def test_del_key(self):
+        # empty tree
+        with self.assertRaises(KeyError):
+            self.bst.del_key(1)
+
+        # not-empty tree
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
+        self.bst.put(6, "elephant")
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        # /   \   /
+        #    (4) (6)
+
+        # del root
+        self.bst.del_key(5)
+        #     (6)
+        #    /   \
+        #  (2)    (7)
+        # /   \   /
+        #    (4)
+        # sucessor == 6
+        self.assertFalse(self.bst.contains(5))
+        self.assertEqual(6, self.bst.root.key)
+        self.assertEqual(7, self.bst.root.right.key)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        
+        self.bst.put(1,1)
+        #      (6)
+        #     /   \
+        #   (2)    (7)
+        #   / \   /
+        # (1) (4)
+        # sucessor == 4
+        self.bst.del_key(2)
+        #      (6)
+        #     /   \
+        #   (4)    (7)
+        #   / \   /
+        # (1) 
+        # sucessor == 4
+        self.assertFalse(self.bst.contains(2))
+        self.assertEqual(4, self.bst.root.left.key)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        
+        self.bst.del_key(1)
+        #      (6)
+        #     /   \
+        #   (4)    (7)
+        #   / \   /
+        # sucessor == None
+        self.assertFalse(self.bst.contains(1))
+        self.assertIsNone(self.bst.root.left.left)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        
+        self.bst.del_key(6)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        
+        self.bst.del_key(7)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        
+        self.bst.del_key(4)
+        self.assertOrderingProperty(self.bst.root)
+        self.assertSizeConsistency()
+        self.assertTrue(self.bst.is_empty)
 
     def assertSizeConsistency(self):
         return self._assertSizeConsistency(self.bst.root)

@@ -80,7 +80,7 @@ class BST:
         Returns `True` if the BST is empty, `False` otherwise.
         """
         return self._size(self.root) == 0
-    
+
     def size(self, k=None):
         """
         Returns the size of _Node at `k`.
@@ -88,7 +88,7 @@ class BST:
         """
         if k is None:
             return self._size(self.root)
-            
+
         node = self._get_node_at(k)
         return self._size(node)
 
@@ -100,11 +100,11 @@ class BST:
             return 0
 
         return node.size
-    
+
     def _get_node_at(self, k):
         """
         Returns the _Node object at the given key `k`.
-        
+
         If the BST does not contain `k`, returns `None`.
         """
         node = self.root
@@ -118,20 +118,20 @@ class BST:
                 return node
 
         return None
-        
+
     def get(self, k):
         """
         Returns the value associated with the given key `k`.
-        
+
         If `k` is not in the BST, return None.
         """
         node = self._get_node_at(k)
-        
+
         if node is None:
             return None
         else:
             return node.val
-        
+
     def contains(self, k):
         """
         Returns `True` if given key `k` is in the BST.
@@ -151,6 +151,10 @@ class BST:
         return node.parent
 
     def put(self, k, v):
+        """
+        Inserts the specified key-value pair into the BST.
+        If the BST contains `k`, overwrites the old value with `v`.
+        """
         self.root = self._put(self.root, k, v)
 
     def _put(self, node, k, v, parent=None):
@@ -346,28 +350,28 @@ class BST:
 
     def del_max(self):
         """
-        Removes and return the largest key from the BST:
+        Removes the largest key from the BST (if not empty):
+
         1) finds the maximum node
-        2) replace the link to that node, ie `parent.right`, by its left link
+        2) replace the link to that node by its left link
         """
-        max_node = self._get_max_node(self.root)
+        if self.is_empty:
+            raise KeyError("BST is empty.")
 
-        if max_node is None:
-            raise KeyError("Tree is empty.")
+        self.root = self._del_max(self.root)
 
-        parent = max_node.parent
+    def _del_max(self, node):
+        # if the given node is the maximum
+        if node.right is None:
+            # replace the node with its left link
+            return node.left
 
-        # edge case: root is the max
-        if parent is None:
-            self.root = max_node.left
-        else:
-            parent.right = max_node.left
+        # recurse
+        node.right = self._del_max(node.right)
 
-        # update parent
-        if max_node.left is not None:
-            max_node.left.parent = parent
-
-        return max_node
+        # update size: self + left + right
+        node.size = 1 + self._size(node.left) + self._size(node.right)
+        return node
 
     def del_min(self):
         """
@@ -419,7 +423,7 @@ class TestsBST(unittest.TestCase):
         # tree is empty
         self.assertTrue(self.bst.is_empty)
         self.assertEqual(self.bst.size(), 0)
-        
+
         self.bst.put(50, 50)
         self.assertEqual(self.bst.size(50), 1)
         self.bst.put(70, 70)
@@ -472,17 +476,16 @@ class TestsBST(unittest.TestCase):
     def test_contains(self):
         # empty tree contains no key
         self.assertFalse(self.bst.contains(1))
-        
+
         self.bst.put(5, "apple")
         self.assertTrue(self.bst.contains(5))
-        
+
         self.bst.put(2, "banana")
         self.assertTrue(self.bst.contains(2))
-        
+
         self.bst.put(7, "cherry")
         self.assertTrue(self.bst.contains(7))
 
-        
     def test_put_new_key(self):
         self.bst.put(5, "apple")
 
@@ -831,7 +834,7 @@ class TestsBST(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.bst._get_parent_node(1)
 
-    def _test_del_max(self):
+    def test_del_max(self):
         with self.assertRaises(KeyError):
             self.bst.del_max()
 
@@ -846,9 +849,8 @@ class TestsBST(unittest.TestCase):
         #      (4)
 
         # max == 7
-        expected = self.bst._get_node_at(7)
-        deleted = self.bst.del_max()
-        self.assertEqual(expected, deleted)
+        self.bst.del_max()
+        self.assertFalse(self.bst.contains(7))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 3
@@ -856,9 +858,8 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # max == 5
-        expected = self.bst._get_node_at(5)
-        deleted = self.bst.del_max()
-        self.assertEqual(expected, deleted)
+        self.bst.del_max()
+        self.assertFalse(self.bst.contains(5))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 2
@@ -866,9 +867,8 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # max == 4
-        expected = self.bst._get_node_at(4)
-        deleted = self.bst.del_max()
-        self.assertEqual(expected, deleted)
+        self.bst.del_max()
+        self.assertFalse(self.bst.contains(4))
         self.assertOrderingProperty(self.bst.root)
         # check updated sizes
         expected_size = 1
@@ -876,10 +876,10 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(expected_size, new_size)
 
         # max == 2
-        expected = self.bst._get_node_at(2)
-        deleted = self.bst.del_max()
-        self.assertEqual(expected, deleted)
+        self.bst.del_max()
+        self.assertFalse(self.bst.contains(2))
         self.assertOrderingProperty(self.bst.root)
+        self.assertTrue(self.bst.is_empty)
 
         # tree should be empty
         with self.assertRaises(KeyError):

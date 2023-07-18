@@ -33,6 +33,21 @@ class BinarySearchTree:
         """
         return self.get(k) is not None
         
+    def size(self):
+        """
+        Returns the size of the BST.
+        """
+        return self._size(self.root)
+            
+    def _size(self, subtree):
+        """
+        Returns the size of the BST rooted at `subtree`.
+        """
+        if subtree is None:
+            return 0
+        else:
+            return subtree.size
+ 
     def get(self, k):
         if self.is_empty:
             return None
@@ -110,8 +125,9 @@ class BinarySearchTree:
         else: # k > subtree.key
             subtree.right = self._put(k, v, subtree.right)
 
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         return subtree
-        
+    
 import unittest
 
 class TestsBST(unittest.TestCase):
@@ -268,7 +284,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(5)
         self.assertEqual(result, "apple")
         self.assertOrderingProperty(self.bst.root)
-        # self.assertSizeConsistency(self.bst.root)
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_duplicate_key(self):
         self.bst.put(5, "apple")
@@ -277,7 +293,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(5)
         self.assertEqual(result, "banana")
         self.assertOrderingProperty(self.bst.root)
-        # self.assertSizeConsistency(self.bst.root)
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_multiple_keys(self):
         self.bst.put(5, "apple")
@@ -288,7 +304,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(4)
         self.assertEqual(result, "date")
         self.assertOrderingProperty(self.bst.root)
-        # self.assertSizeConsistency(self.bst.root)
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_and_get_large_tree(self):
         for i in range(1, 101):
@@ -297,4 +313,117 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(77)
         self.assertEqual(result, "77")
         self.assertOrderingProperty(self.bst.root)
-        # self.assertSizeConsistency(self.bst.root)
+        self.assertSizeConsistency(self.bst.root)
+    
+    def test_size_empty_tree(self):
+        """
+        Tests `size` method.
+        """
+        result = self.bst.size()
+        expected = 0
+        self.assertEqual(expected, result)
+        
+    def test_size_not_empty_tree(self):
+        """
+        Tests `size` method.
+        """
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
+        result = self.bst.size()
+        expected = 4
+        self.assertEqual(expected, result)
+        
+    def test_subtree_size(self):
+        """
+        Tests the `_size` method.
+        """
+        ### INSERT (5)
+        self.bst.put(5, "apple")
+        # CHECK ROOT
+        root = self.bst.root
+        result = self.bst._size(root)
+        expected = 1
+        self.assertEqual(expected, result)
+        
+        ### INSERT (2)
+        self.bst.put(2, "banana")
+        
+        # CHECK ROOT
+        result = self.bst._size(root)
+        expected = 2
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (2)
+        subtree = root.left
+        result = self.bst._size(subtree)
+        expected = 1
+        self.assertEqual(expected, result)
+        
+        ### INSERT (3)
+        self.bst.put(3, "cherry")
+        
+        # CHECK ROOT
+        result = self.bst._size(root)
+        expected = 3
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (2)
+        subtree = root.left
+        result = self.bst._size(subtree)
+        expected = 2
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (3)
+        subtree = root.left.right
+        result = self.bst._size(subtree)
+        expected = 1
+        self.assertEqual(expected, result)
+        
+        ### INSERT (7)
+        self.bst.put(7, "daisy")
+        
+        # CHECK ROOT
+        result = self.bst._size(root)
+        expected = 4
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (2)
+        subtree = root.left
+        result = self.bst._size(subtree)
+        expected = 2
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (3)
+        subtree = root.left.right
+        result = self.bst._size(subtree)
+        expected = 1
+        self.assertEqual(expected, result)
+        
+        # CHECK SUBTREE (7)
+        subtree = root.right
+        result = self.bst._size(subtree)
+        expected = 1
+        self.assertEqual(expected, result)
+        
+    def assertSizeConsistency(self, subtree):
+        """
+        Returns true if the subtree count, i.e. its size, is
+        consistent in the data structure rooted at that node,
+        raises assertion error otherwise.
+        """
+        if subtree is None:
+            return True
+        
+        subtree_size = self.bst._size(subtree)
+        left_size = self.bst._size(subtree.left)
+        right_size = self.bst._size(subtree.right)
+        expected_size = 1 + left_size + right_size
+        self.assertTrue( subtree_size == expected_size)
+                
+        self.assertSizeConsistency(subtree.left)
+        self.assertSizeConsistency(subtree.right)
+        
+        return True
+        

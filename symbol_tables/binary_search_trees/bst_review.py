@@ -194,7 +194,7 @@ class BinarySearchTree:
         (c) If `k < subtree.key`, then the floor of key **MUST**
         be in the left subtree.
         
-        (d) If `k < subtree.key`, then the floor of key **COULD**
+        (d) If `k > subtree.key`, then the floor of key **COULD**
         be in the right subtree. That is, is there a key smaller
         than or equal to `k` in the right subtree?
             - if yes, recursively find and return it;
@@ -222,7 +222,57 @@ class BinarySearchTree:
                 return subtree.key
             else:
                 return floor
+    
+    def ceiling(self, k):
+        """
+        Returns the SMALLEST key in the BST that is greater than
+        or equal to the given key `k`.
+        """
+        return self._ceiling(k, self.root)
         
+    def _ceiling(self, k, subtree):
+        """
+        Compare `k` with key of the root of the `subtree`:
+        
+        (a) If subtree is empty, return None.
+        
+        (b) If `k == subtree.key`, then `k` is the ceiling.
+        
+        (c) If `k > subtree.key`, then the ceiling of `k` **MUST**
+        be in the right subtree: recursively look for it.
+        
+        (d) If `k < subtree.key`, then the ceiling of key **COULD**
+        be in the left subtree. That is, is there a key larger
+        than or equal to `k` in the left subtree?
+            - if yes, recursively find and return it;
+            - if not, or if `k` is equal to the key at the root,
+            then `subtree.key` is the ceiling of `k`.
+        """
+        # (a)
+        if (subtree is None) or (k > self._max(subtree)):
+            return None
+        
+        # (b)
+        if k == subtree.key:
+            return subtree.key
+        
+        # (c) MUST be in the right subtree. Find and return it.
+        if k > subtree.key:
+            return self._ceiling(k, subtree.right)
+        
+        # (d) COULD be in the left subtree
+        if k < subtree.key:
+            ceiling = self._ceiling(k, subtree.left)
+            
+            # if it is not in the left subtree
+            if ceiling is None:
+                return subtree.key
+            else:
+                return ceiling
+
+#################
+###   TESTS   ###
+#################
 import unittest
 
 class TestsBST(unittest.TestCase):
@@ -590,3 +640,35 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.floor(99), 80)
         self.assertEqual(self.bst.floor(88), 80)
         self.assertEqual(self.bst.floor(77), 70)
+    
+    def test_ceiling_empty_tree(self):
+        self.assertIsNone(self.bst.ceiling(1))
+    
+    def test_ceiling(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+
+        # ceiling == root
+        self.assertEqual(self.bst.ceiling(50), 50)
+        self.assertEqual(self.bst.ceiling(70), 70)
+        self.assertEqual(self.bst.ceiling(30), 30)
+        self.assertEqual(self.bst.ceiling(10), 10)
+        self.assertEqual(self.bst.ceiling(80), 80)
+        self.assertEqual(self.bst.ceiling(40), 40)
+
+        # other
+        self.assertEqual(self.bst.ceiling(1), 10)
+        self.assertEqual(self.bst.ceiling(5), 10)
+        self.assertEqual(self.bst.ceiling(15), 30)
+        self.assertEqual(self.bst.ceiling(25), 30)
+        self.assertEqual(self.bst.ceiling(35), 40)
+        self.assertEqual(self.bst.ceiling(45), 50)
+        self.assertEqual(self.bst.ceiling(69), 70)
+        self.assertEqual(self.bst.ceiling(99), None)
+        self.assertEqual(self.bst.ceiling(88), None)
+        self.assertEqual(self.bst.ceiling(77), 80)
+   

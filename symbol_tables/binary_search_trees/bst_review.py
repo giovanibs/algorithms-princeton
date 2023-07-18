@@ -128,6 +128,30 @@ class BinarySearchTree:
         subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         return subtree
     
+    def min(self):
+        """
+        Returns the smallest key in the BST.
+        """
+        return self._min(self.root)
+        
+    def _min(self, subtree):
+        """
+        If the subtree is None, then there is no smallest key.
+        
+        If the left link of the subtree is null, the smallest
+        key in this subtree is the key at the subtree root;
+        
+        Otherwise, the smallest key in the subtree is the
+        smallest key in the subtree rooted at the left link.
+        """
+        if subtree is None:
+            return None
+        
+        if subtree.left is None:
+            return subtree.key
+        else:
+            return self._min(subtree.left)
+
 import unittest
 
 class TestsBST(unittest.TestCase):
@@ -426,4 +450,23 @@ class TestsBST(unittest.TestCase):
         self.assertSizeConsistency(subtree.right)
         
         return True
+    
+    def test_min_empty_tree(self):
+        self.assertIsNone(self.bst.min())
+        
+    def test_min(self):
+        self.bst.put(5, "apple")
+        self.assertEqual(5, self.bst.min())
+        
+        self.bst.put(2, "banana")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(7, "cherry")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(6, "date")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(1, "eggplant")
+        self.assertEqual(1, self.bst.min())
         

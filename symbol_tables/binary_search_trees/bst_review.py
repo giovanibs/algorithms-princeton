@@ -27,6 +27,12 @@ class BinarySearchTree:
     def is_empty(self):
         return self.root is None
     
+    def contains(self, k):
+        """
+        Does this BST contain the given key?
+        """
+        return self.get(k) is not None
+        
     def get(self, k):
         if self.is_empty:
             return None
@@ -191,3 +197,28 @@ class TestsBST(unittest.TestCase):
     def test_get_empty_tree(self):
         result = self.bst.get(5)
         self.assertEqual(result, None)
+
+    def test_does_not_contain(self):
+        # EMPTY TREE
+        self.assertFalse(self.bst.contains(1))
+        
+        # NOT EMPTY TREE
+        root = self.bst.root = self.bst._Node(5, 'apple')
+        root.left = self.bst._Node(2, "banana")
+        root.right = self.bst._Node(7, "cherry")
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        self.assertFalse(self.bst.contains(1))
+        
+    def test_contains(self):
+        root = self.bst.root = self.bst._Node(5, 'apple')
+        root.left = self.bst._Node(2, "banana")
+        root.right = self.bst._Node(7, "cherry")
+        #     (5)
+        #    /   \
+        #  (2)    (7)
+        self.assertTrue(self.bst.contains(5))
+        self.assertTrue(self.bst.contains(2))
+        self.assertTrue(self.bst.contains(7))
+        

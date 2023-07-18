@@ -554,7 +554,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(5)
         self.assertEqual(result, "apple")
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_duplicate_key(self):
         self.bst.put(5, "apple")
@@ -563,7 +563,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(5)
         self.assertEqual(result, "banana")
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_multiple_keys(self):
         self.bst.put(5, "apple")
@@ -574,7 +574,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(4)
         self.assertEqual(result, "date")
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
     def test_put_and_get_large_tree(self):
         for i in range(1, 101):
@@ -583,7 +583,7 @@ class TestsBST(unittest.TestCase):
         result = self.bst.get(77)
         self.assertEqual(result, "77")
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
     def test_ordering_property(self):
         self.bst.put(5, "apple")
@@ -925,7 +925,7 @@ class TestsBST(unittest.TestCase):
         expected_size = 3
         new_size = self.bst.size(5)
         self.assertEqual(expected_size, new_size)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
         # max == 5
         self.bst.del_max()
@@ -935,7 +935,7 @@ class TestsBST(unittest.TestCase):
         expected_size = 2
         new_size = self.bst.size(2)
         self.assertEqual(expected_size, new_size)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
         # max == 4
         self.bst.del_max()
@@ -945,14 +945,14 @@ class TestsBST(unittest.TestCase):
         expected_size = 1
         new_size = self.bst.size(2)
         self.assertEqual(expected_size, new_size)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
         # max == 2
         self.bst.del_max()
         self.assertFalse(self.bst.contains(2))
         self.assertOrderingProperty(self.bst.root)
         self.assertTrue(self.bst.is_empty)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
 
         # tree should be empty
         with self.assertRaises(KeyError):
@@ -1038,7 +1038,7 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(6, self.bst.root.key)
         self.assertEqual(7, self.bst.root.right.key)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         
         self.bst.put(1,1)
         #      (6)
@@ -1057,7 +1057,7 @@ class TestsBST(unittest.TestCase):
         self.assertFalse(self.bst.contains(2))
         self.assertEqual(4, self.bst.root.left.key)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         
         self.bst.del_key(1)
         #      (6)
@@ -1068,25 +1068,22 @@ class TestsBST(unittest.TestCase):
         self.assertFalse(self.bst.contains(1))
         self.assertIsNone(self.bst.root.left.left)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         
         self.bst.del_key(7)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         
         self.bst.del_key(6)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         
         self.bst.del_key(4)
         self.assertOrderingProperty(self.bst.root)
-        self.assertSizeConsistency()
+        self.assertSizeConsistency(self.bst.root)
         self.assertTrue(self.bst.is_empty)
 
-    def assertSizeConsistency(self):
-        return self._assertSizeConsistency(self.bst.root)
-    
-    def _assertSizeConsistency(self, subtree):
+    def assertSizeConsistency(self, subtree):
         if subtree is None:
             return True
         
@@ -1096,8 +1093,8 @@ class TestsBST(unittest.TestCase):
         expected_size = 1 + left_size + right_size
         self.assertTrue( subtree_size == expected_size)
                 
-        self._assertSizeConsistency(subtree.left)
-        self._assertSizeConsistency(subtree.right)
+        self.assertSizeConsistency(subtree.left)
+        self.assertSizeConsistency(subtree.right)
         
 if __name__ == "__main__":
     unittest.main()

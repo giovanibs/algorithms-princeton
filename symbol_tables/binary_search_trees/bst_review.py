@@ -342,6 +342,34 @@ class BinarySearchTree:
         else:   # k > subtree.key
             return 1 + self._size(subtree.left) + self._rank(k, subtree.right)
 
+    def del_min(self):
+        """
+        Removes the smallest key from the BST.
+        """
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        self.root = self._del_min(self.root)
+        
+    def _del_min(self, subtree):
+        """
+        We go left (recursively) until we find a node that
+        that has a null left link and then replace the link
+        to that node by its right link.
+        """
+        # if given node is the smallest
+        if subtree.left is None:
+            # replace the node with its right link
+            return subtree.right
+        else:
+            # recursively look for next smaller node
+            subtree.left = self._del_min(subtree.left)
+        
+        # update subtree size
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        return subtree
+            
+
 #################
 ###   TESTS   ###
 #################
@@ -800,3 +828,48 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(2, self.bst.rank(5))
         self.assertEqual(3, self.bst.rank(6))
         self.assertEqual(4, self.bst.rank(7))
+
+    def test_del_min_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_min()
+            
+    def test_del_min(self):
+        bst = self.bst
+        
+        bst.put(5, "apple")
+        bst.del_min()
+        self.assertTrue(bst.is_empty)
+        
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(6, "date")
+        bst.put(3, "eggplant")
+        
+        bst.del_min() # 2
+        self.assertFalse(bst.contains(2))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(3, bst.root.left.key)
+        
+        bst.del_min() # 3
+        self.assertFalse(bst.contains(3))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertIsNone(bst.root.left)
+        
+        bst.del_min() # 5
+        self.assertFalse(bst.contains(5))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(7, bst.root.key)
+        
+        bst.del_min() # 6
+        self.assertFalse(bst.contains(6))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(7, bst.root.key)
+        
+        bst.del_min() # 7
+        self.assertTrue(bst.is_empty)        
+        

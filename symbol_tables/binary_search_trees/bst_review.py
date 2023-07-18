@@ -270,6 +270,46 @@ class BinarySearchTree:
             else:
                 return ceiling
 
+    def select(self, r):
+        """
+        Returns the key of rank `r`, i.e. the key such that
+        precisely `r` other keys in the BST are smaller.
+        
+        0 <= r < size(BST)
+        """
+        if r < 0 or r >= self.size():
+            raise ValueError
+        
+        return self._select(r, self.root)
+    
+    def _select(self, r, subtree):
+        """
+        For the given rank `r` (0<= r < subtree size) and a
+        subtree root `subtree`:
+        
+        (a) If `r == size(subtree.left)`, we return the key
+        at the subtree root;
+        
+        (b) If `r < size(subtree.left)`, we look (recursively)
+        for the key of rank `r` in the left subtree;
+        
+        (c) If `r > size(subtree.left)`, we look (recursively)
+        for the key of rank (r - size(subtree.left) - 1)
+        in the right subtree.
+        """
+        left_size = self._size(subtree.left)
+        # (a)
+        if r == left_size:
+            return subtree.key
+        # (b)
+        elif r < left_size:
+            return self._select(r, subtree.left)
+        # (c)
+        else: # r > left_size:
+            new_r = r - left_size - 1
+            return self._select(new_r, subtree.right)
+
+
 #################
 ###   TESTS   ###
 #################
@@ -671,4 +711,33 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(self.bst.ceiling(99), None)
         self.assertEqual(self.bst.ceiling(88), None)
         self.assertEqual(self.bst.ceiling(77), 80)
-   
+
+    def test_select_empty_tree(self):
+        with self.assertRaises(ValueError):
+            self.bst.select(0)
+        
+    def test_select_out_of_range(self):
+        self.bst.put(5, "apple")
+        
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.bst.select(-1))
+        
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.bst.select(1))
+        
+    def test_select(self):
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(6, "date")
+        self.bst.put(3, "eggplant")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        #     (3) (6)
+        self.assertEqual(2, self.bst.select(0))
+        self.assertEqual(3, self.bst.select(1))
+        self.assertEqual(5, self.bst.select(2))
+        self.assertEqual(6, self.bst.select(3))
+        self.assertEqual(7, self.bst.select(4))

@@ -1070,11 +1070,11 @@ class TestsBST(unittest.TestCase):
         self.assertOrderingProperty(self.bst.root)
         self.assertSizeConsistency()
         
-        self.bst.del_key(6)
+        self.bst.del_key(7)
         self.assertOrderingProperty(self.bst.root)
         self.assertSizeConsistency()
         
-        self.bst.del_key(7)
+        self.bst.del_key(6)
         self.assertOrderingProperty(self.bst.root)
         self.assertSizeConsistency()
         

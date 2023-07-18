@@ -132,7 +132,11 @@ class BinarySearchTree:
         """
         Returns the smallest key in the BST.
         """
-        return self._min(self.root)
+        smallest = self._min(self.root)
+        if smallest is None:
+            return None
+        else:
+            return smallest.key 
         
     def _min(self, subtree):
         """
@@ -148,7 +152,7 @@ class BinarySearchTree:
             return None
         
         if subtree.left is None:
-            return subtree.key
+            return subtree
         else:
             return self._min(subtree.left)
         
@@ -202,7 +206,7 @@ class BinarySearchTree:
             then `subtree.key` is the floor of `k`.
         """
         # (a)
-        if (subtree is None) or (k < self._min(subtree)):
+        if (subtree is None) or (k < self._min(subtree).key):
             return None
         
         # (b)
@@ -396,7 +400,80 @@ class BinarySearchTree:
         subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         return subtree
             
+    def del_key(self, k):
+        """
+        Removes the given key from the BST.
+        """
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        if not self.contains(k):
+            raise KeyError(f"Key `{k}` not in the BST.")
+        
+        self.root = self._del_key(k, self.root)
+        
+    def _del_key(self, k, subtree):
+        """
+        First, recursively find the node to be deleted.
+        
+        Deleted node replacement:
+        
+        ### CASE 1: node has only 1 child
+            Replace the deleted node with its child.
+        
+        ### CASE 2: node has both children -> apply Hibbard's:
+            
+            Delete a node by replacing it with its successor. The successor
+            is the node with the smallest key in its right subtree.
+            
+            Steps:
+            
+            1) Save a link to the node to be deleted (aux_node)
+            
+            2) Set node to point to its successor _min(aux_node.right).
+            That is, a node that certainly does not have a left link.
+            
+            3) Set the right link of node (which is supposed to point to
+            the BST containing all the keys larger than node.key) to
+            del_min(aux_node.right), the link to the BST containing all
+            the keys that are larger than node.key after the deletion.
 
+            4) Set the left link of node (which was None) to aux_node.left
+            (all the keys that are less than both the deleted key and its
+            successor).
+        """
+        if k < subtree.key:
+            subtree.left = self._del_key(k, subtree.left)
+        
+        elif k > subtree.key:
+            subtree.right = self._del_key(k, subtree.right)
+        
+        else: # k == subtree.key
+            ### CASE 1: node has only 1 child
+            if subtree.left is None:
+                return subtree.right
+            
+            if subtree.right is None:
+                return subtree.left
+            
+            ### CASE 2: node has both children -> apply Hibbard's:
+            deleted_node = subtree
+            
+            # choose the successor to take the deleted node's place
+            subtree = self._min(deleted_node.right)
+            
+            # the right link will hold all nodes greater than
+            # the substituted node (also delete the substitute node
+            # from the right subtree)
+            subtree.right = self._del_min(deleted_node.right)
+            
+            # keep the left subtree in the left link
+            subtree.left = deleted_node.left
+        
+        # update sizes
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        return subtree
+            
 #################
 ###   TESTS   ###
 #################
@@ -942,5 +1019,66 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(2, bst.root.key)
         
         bst.del_max() # 2
+        self.assertTrue(bst.is_empty)        
+        
+    def test_del_key_empty_BST(self):
+        self.assertTrue(self.bst.is_empty)
+        with self.assertRaises(KeyError):
+            self.bst.del_key(0)
+    
+    def test_del_key_not_in_BST(self):
+        self.bst.put(5, "apple")
+        self.assertFalse(self.bst.is_empty)
+        
+        with self.assertRaises(KeyError):
+            self.bst.del_key(1)
+    
+    def test_del_key(self):
+        bst = self.bst
+        
+        bst.put(5, "apple")
+        bst.del_key(5)
+        self.assertTrue(bst.is_empty)
+        
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(6, "date")
+        bst.put(1, "eggplant")
+        bst.put(8, "fig")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        # (1)    (6) (8)
+        
+        # only 1 child
+        bst.del_key(2)
+        self.assertFalse(bst.contains(2))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        
+        # no child
+        bst.del_key(1)
+        self.assertFalse(bst.contains(1))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        
+        # 2 children
+        bst.del_key(7)
+        self.assertFalse(bst.contains(7))
+        self.assertEqual(8, bst.root.right.key)
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        
+        # tree root with 1 child
+        bst.del_key(5)
+        self.assertFalse(bst.contains(5))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(8, bst.root.key)
+        
+        bst.del_key(6)
+        bst.del_key(8)
         self.assertTrue(bst.is_empty)        
         

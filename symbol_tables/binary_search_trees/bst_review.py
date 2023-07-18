@@ -309,6 +309,38 @@ class BinarySearchTree:
             new_r = r - left_size - 1
             return self._select(new_r, subtree.right)
 
+    def rank(self, k):
+        """
+        Returns the rank (0 <= rank < BST size) of the given key `k`.
+        In other words, the number of keys in the symbol table
+        strictly less than `k`.
+        """
+        if not self.contains(k):
+            raise KeyError(f"`{k}` not in the BST!")
+        
+        return self._rank(k, self.root)
+        
+    def _rank(self, k, subtree):
+        """
+        If `k == subtree.key`, we return the number of keys in the
+        left subtree;
+        
+        if `k < subtree.key`, we recursively look for the rank of
+        the key in the left subtree;
+        
+        if `k > subtree.key`, we return the sum of:
+            + `1` (to count the key at the root)
+            + left subtree size
+            + (recursively) the rank of the key in the right subtree.
+        """
+        if k == subtree.key:
+            return self._size(subtree.left)
+        
+        elif k < subtree.key:
+            return self._rank(k, subtree.left)
+        
+        else:   # k > subtree.key
+            return 1 + self._size(subtree.left) + self._rank(k, subtree.right)
 
 #################
 ###   TESTS   ###
@@ -741,3 +773,30 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(5, self.bst.select(2))
         self.assertEqual(6, self.bst.select(3))
         self.assertEqual(7, self.bst.select(4))
+    
+    def test_rank_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.rank(1)
+        
+    def test_rank_key_not_in_BST(self):
+        self.bst.put(5, "apple")
+        
+        with self.assertRaises(KeyError):
+            self.bst.rank(2)
+        
+    def test_rank(self):
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(6, "date")
+        self.bst.put(3, "eggplant")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        #     (3) (6)
+        self.assertEqual(0, self.bst.rank(2))
+        self.assertEqual(1, self.bst.rank(3))
+        self.assertEqual(2, self.bst.rank(5))
+        self.assertEqual(3, self.bst.rank(6))
+        self.assertEqual(4, self.bst.rank(7))

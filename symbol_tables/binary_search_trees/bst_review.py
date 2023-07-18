@@ -369,6 +369,33 @@ class BinarySearchTree:
         subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         return subtree
             
+    def del_max(self):
+        """
+        Removes the LARGEST key from the BST.
+        """
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        self.root = self._del_max(self.root)
+        
+    def _del_max(self, subtree):
+        """
+        We go right (recursively) until we find a node that
+        that has a null right link and then replace the link
+        to that node by its left link.
+        """
+        # if given node is the largest
+        if subtree.right is None:
+            # replace the node with its left link
+            return subtree.left
+        else:
+            # recursively look for next greater node in the right subtree
+            subtree.right = self._del_max(subtree.right)
+        
+        # update subtree size
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        return subtree
+            
 
 #################
 ###   TESTS   ###
@@ -871,5 +898,49 @@ class TestsBST(unittest.TestCase):
         self.assertEqual(7, bst.root.key)
         
         bst.del_min() # 7
+        self.assertTrue(bst.is_empty)        
+        
+    def test_del_max_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_max()
+            
+    def test_del_max(self):
+        bst = self.bst
+        
+        bst.put(5, "apple")
+        bst.del_max()
+        self.assertTrue(bst.is_empty)
+        
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(6, "date")
+        bst.put(3, "eggplant")
+        
+        bst.del_max() # 7
+        self.assertFalse(bst.contains(7))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(6, bst.root.right.key)
+        
+        bst.del_max() # 6
+        self.assertFalse(bst.contains(6))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertIsNone(bst.root.right)
+        
+        bst.del_max() # 5
+        self.assertFalse(bst.contains(5))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(2, bst.root.key)
+        
+        bst.del_max() # 3
+        self.assertFalse(bst.contains(3))
+        self.assertOrderingProperty(bst.root)
+        self.assertSizeConsistency(bst.root)
+        self.assertEqual(2, bst.root.key)
+        
+        bst.del_max() # 2
         self.assertTrue(bst.is_empty)        
         

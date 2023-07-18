@@ -71,6 +71,46 @@ class BinarySearchTree:
         
         if k > subtree.key:
             return self._get(k, subtree.right)
+    
+    def put(self, k, v):
+        self.root = self._put(k, v, self.root)
+        
+    def _put(self, k, v, subtree):
+        """
+        Searches for a null link (i.e. None) in the given subtree
+        to insert the new key and value pair.
+        
+        (a) If the tree is empty, we return a new node containing
+        the key and value;
+        
+        (b) If the search key `k` is equal to the key at the subtree
+        root, update that Node's value with `v`.
+        
+        (c) If `k` is less than the key at the subtree root, we set
+        the subtree left link to the result of inserting the key into
+        the left subtree;
+        
+        (d) If `k` is greater than the key at the subtree root, we set
+        the subtree right link to the result of inserting the key into
+        the right subtree.
+        """
+        # (a)
+        if subtree is None:
+            return self._Node(k, v)
+        
+        # (b)
+        if k == subtree.key:
+            subtree.val = v
+        
+        # (c)
+        elif k < subtree.key:
+            subtree.left = self._put(k, v, subtree.left)
+        
+        # (d)
+        else: # k > subtree.key
+            subtree.right = self._put(k, v, subtree.right)
+
+        return subtree
         
 import unittest
 
@@ -222,3 +262,39 @@ class TestsBST(unittest.TestCase):
         self.assertTrue(self.bst.contains(2))
         self.assertTrue(self.bst.contains(7))
         
+    def test_put_new_key(self):
+        self.bst.put(5, "apple")
+
+        result = self.bst.get(5)
+        self.assertEqual(result, "apple")
+        self.assertOrderingProperty(self.bst.root)
+        # self.assertSizeConsistency(self.bst.root)
+
+    def test_put_duplicate_key(self):
+        self.bst.put(5, "apple")
+        self.bst.put(5, "banana")
+
+        result = self.bst.get(5)
+        self.assertEqual(result, "banana")
+        self.assertOrderingProperty(self.bst.root)
+        # self.assertSizeConsistency(self.bst.root)
+
+    def test_put_multiple_keys(self):
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(4, "date")
+
+        result = self.bst.get(4)
+        self.assertEqual(result, "date")
+        self.assertOrderingProperty(self.bst.root)
+        # self.assertSizeConsistency(self.bst.root)
+
+    def test_put_and_get_large_tree(self):
+        for i in range(1, 101):
+            self.bst.put(i, str(i))
+
+        result = self.bst.get(77)
+        self.assertEqual(result, "77")
+        self.assertOrderingProperty(self.bst.root)
+        # self.assertSizeConsistency(self.bst.root)

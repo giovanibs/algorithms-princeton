@@ -473,7 +473,42 @@ class BinarySearchTree:
         # update sizes
         subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         return subtree
+
+    def keys(self, lo=None, hi=None):
+        """
+        Returns all keys in the BST between `lo` (inclusive) and
+        `hi` (also inclusive) in ascending order.
+        """
+        if lo is None:
+            lo = self.min()
+        if hi is None:
+            hi = self.max()
             
+        q = [] # queue
+            
+        self._in_order(self.root, lo, hi, q)
+        
+        return q
+    
+    def _in_order(self, subtree, lo, hi, q):
+        """
+        Traverse left subtree.
+        Enqueue key.
+        Traverse right subtree.
+        """
+        if subtree is None:
+            return
+        
+        if lo < subtree.key:
+            self._in_order(subtree.left, lo, hi, q)
+            
+        if subtree.key >= lo and subtree.key <= hi:
+            q.append(subtree.key)
+        
+        if hi > subtree.key:
+            self._in_order(subtree.right, lo, hi, q)
+        
+    
 #################
 ###   TESTS   ###
 #################
@@ -1081,4 +1116,66 @@ class TestsBST(unittest.TestCase):
         bst.del_key(6)
         bst.del_key(8)
         self.assertTrue(bst.is_empty)        
+    
+    def test_keys_empty_tree(self):
+        self.assertEqual([], self.bst.keys())
+    
+    def test_all_keys(self):
+        bst = self.bst # for convenience
         
+        bst.put(5, "apple")
+        self.assertEqual([5], self.bst.keys())
+        
+        bst.put(2, "banana")
+        self.assertEqual([2, 5], self.bst.keys())
+        
+        bst.put(7, "cherry")
+        self.assertEqual([2, 5, 7], self.bst.keys())
+        
+        bst.put(6, "date")
+        bst.put(1, "eggplant")
+        bst.put(8, "fig")
+        self.assertEqual([1, 2, 5, 6, 7, 8], self.bst.keys())
+    
+    def test_keys_in_range(self):
+        bst = self.bst # for convenience
+        
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(6, "date")
+        bst.put(1, "eggplant")
+        bst.put(8, "fig")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        # (1)    (6) (8)
+        
+        result = bst.keys(1, 1)
+        expected = [1]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(7, 7)
+        expected = [7]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(1, 2)
+        expected = [1, 2]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(7, 10)
+        expected = [7, 8]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(1, 5)
+        expected = [1, 2, 5]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(2, 7)
+        expected = [2, 5, 6, 7]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(0, 10)
+        expected = [1, 2, 5, 6, 7, 8]
+        self.assertEqual(expected, result)

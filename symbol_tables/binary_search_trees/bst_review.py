@@ -176,6 +176,53 @@ class BinarySearchTree:
         else:
             return self._max(subtree.right)
 
+    def floor(self, k):
+        """
+        Returns the LARGEST key in the BST that is equal to or
+        smaller than the given key.
+        """
+        return self._floor(k, self.root)
+        
+    def _floor(self, k, subtree):
+        """
+        Compare `k` with key of the root of the `subtree`:
+        
+        (a) If subtree is empty, return None.
+        
+        (b) If `k == subtree.key`, then `k` is the floor.
+        
+        (c) If `k < subtree.key`, then the floor of key **MUST**
+        be in the left subtree.
+        
+        (d) If `k < subtree.key`, then the floor of key **COULD**
+        be in the right subtree. That is, is there a key smaller
+        than or equal to `k` in the right subtree?
+            - if yes, recursively find and return it;
+            - if not, or if `k` is equal to the key at the root,
+            then `subtree.key` is the floor of `k`.
+        """
+        # (a)
+        if (subtree is None) or (k < self._min(subtree)):
+            return None
+        
+        # (b)
+        if k == subtree.key:
+            return subtree.key
+        
+        # (c) MUST be in the left subtree
+        if k < subtree.key:
+            return self._floor(k, subtree.left)
+        
+        # (d) COULD be in the right subtree
+        if k > subtree.key:
+            floor = self._floor(k, subtree.right)
+            
+            # if not
+            if floor is None:
+                return subtree.key
+            else:
+                return floor
+        
 import unittest
 
 class TestsBST(unittest.TestCase):
@@ -512,4 +559,34 @@ class TestsBST(unittest.TestCase):
         
         self.bst.put(9, "eggplant")
         self.assertEqual(9, self.bst.max())
-        
+    
+    def test_floor_empty_tree(self):
+        self.assertIsNone(self.bst.floor(1))
+    
+    def test_floor(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+
+        # floor == root
+        self.assertEqual(self.bst.floor(50), 50)
+        self.assertEqual(self.bst.floor(70), 70)
+        self.assertEqual(self.bst.floor(30), 30)
+        self.assertEqual(self.bst.floor(10), 10)
+        self.assertEqual(self.bst.floor(80), 80)
+        self.assertEqual(self.bst.floor(40), 40)
+
+        # other
+        self.assertIsNone(self.bst.floor(1))
+        self.assertIsNone(self.bst.floor(5))
+        self.assertEqual(self.bst.floor(15), 10)
+        self.assertEqual(self.bst.floor(25), 10)
+        self.assertEqual(self.bst.floor(35), 30)
+        self.assertEqual(self.bst.floor(45), 40)
+        self.assertEqual(self.bst.floor(69), 50)
+        self.assertEqual(self.bst.floor(99), 80)
+        self.assertEqual(self.bst.floor(88), 80)
+        self.assertEqual(self.bst.floor(77), 70)

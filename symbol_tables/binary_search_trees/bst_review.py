@@ -151,6 +151,30 @@ class BinarySearchTree:
             return subtree.key
         else:
             return self._min(subtree.left)
+        
+    def max(self):
+        """
+        Returns the LARGEST key in the BST.
+        """
+        return self._max(self.root)
+        
+    def _max(self, subtree):
+        """
+        If the subtree is None, then there is no largest key.
+        
+        If the right link of the subtree is null, the largest
+        key in this subtree is the key at the subtree root;
+        
+        Otherwise, the largest key in the subtree is the
+        largest key in the subtree rooted at the right link.
+        """
+        if subtree is None:
+            return None
+        
+        if subtree.right is None:
+            return subtree.key
+        else:
+            return self._max(subtree.right)
 
 import unittest
 
@@ -469,4 +493,23 @@ class TestsBST(unittest.TestCase):
         
         self.bst.put(1, "eggplant")
         self.assertEqual(1, self.bst.min())
+        
+    def test_max_empty_tree(self):
+        self.assertIsNone(self.bst.max())
+        
+    def test_max(self):
+        self.bst.put(5, "apple")
+        self.assertEqual(5, self.bst.max())
+        
+        self.bst.put(2, "banana")
+        self.assertEqual(5, self.bst.max())
+        
+        self.bst.put(7, "cherry")
+        self.assertEqual(7, self.bst.max())
+        
+        self.bst.put(6, "date")
+        self.assertEqual(7, self.bst.max())
+        
+        self.bst.put(9, "eggplant")
+        self.assertEqual(9, self.bst.max())
         

@@ -8,7 +8,6 @@ except:
     sys.path.append(package_path)
     from binary_search_trees.bst2 import BinarySearchTree as BST
 
-
 class RedBlackBST(BST):
     """
     # Left-leaning red-black BST
@@ -70,14 +69,14 @@ class RedBlackBST(BST):
         super().__init__()
 
     class _Node:
-        def __init__(self, key, val, color=None):
+        def __init__(self, key, val, size=1, color=None):
             self.assert_color(color)
             self.color = color or RedBlackBST.BLACK
             self.key = key
             self.val = val
             self.left = None
             self.right = None
-            self.size = 1
+            self.size = size
 
         def assert_color(self, color):
             if color not in [None, RedBlackBST.BLACK, RedBlackBST.RED]:
@@ -179,6 +178,32 @@ class RedBlackBST(BST):
         # key == 2
         return self._is_BST(subtree.left, lo=lo, hi=this_key) \
             and self._is_BST(subtree.right, lo=this_key, hi=hi)
+    
+    @property
+    def is_size_consistent(self):
+        """
+        Returns true if the subtree count, i.e. its size, is
+        consistent in the data structure rooted at that node,
+        false otherwise.
+        """
+        return self._is_size_consistent(self.root)
+    
+    def _is_size_consistent(self, subtree):
+        if subtree is None:
+            return True
+        
+        subtree_size = self._size(subtree)
+
+        expected = (
+            1
+            + self._size(subtree.left)
+            + self._size(subtree.right)
+        )
+        if subtree_size != expected:
+            return False
+        
+        return self._is_size_consistent(subtree.left) and \
+            self._is_size_consistent(subtree.right)
     
     # ------------------------------------------------
     #   Overridden BST methods/properties.
@@ -292,7 +317,6 @@ except:
     sys.path.append(package_path)
     from binary_search_trees.bst2 import TestsBST
 
-
 class TestsRedBlackBST(TestsBST):
     def setUp(self):
         self.bst = RedBlackBST()
@@ -335,6 +359,43 @@ class TestsRedBlackBST(TestsBST):
         self.bst.root.right.left = self.bst._Node(2, 'd')
         self.assertTrue(self.bst.is_BST)
 
-
+    def test_is_size_consistent_empty_tree(self):
+        self.assertTrue(self.bst.is_size_consistent)
+    
+    def test_is_size_consistent_false(self):
+        self.bst.root = self.bst._Node(3, 'a', size=2)
+        self.assertFalse(self.bst.is_size_consistent)
+        
+        self.bst.root.left = self.bst._Node(2, 'b', size=2)     # nok
+        self.bst.root.size = 2                                  # ok
+        self.assertFalse(self.bst.is_size_consistent)
+        
+        self.bst.root.right = self.bst._Node(5, 'c', size=3)    # nok
+        self.bst.root.right.left = self.bst._Node(4, 'e', size=1) # ok
+        self.bst.root.size = 4
+        self.assertFalse(self.bst.is_size_consistent)
+        
+    def test_is_size_consistent(self):
+        self.bst.root = self.bst._Node(3, 'a')
+        self.assertTrue(self.bst.is_size_consistent)
+        
+        self.bst.root.left = self.bst._Node(2, 'b')
+        self.bst.root.size = 2
+        self.assertTrue(self.bst.is_size_consistent)
+        
+        self.bst.root.right = self.bst._Node(5, 'c')
+        self.bst.root.size = 3
+        self.assertTrue(self.bst.is_size_consistent)
+        
+        self.bst.root.left.left = self.bst._Node(1, 'd')
+        self.bst.root.left.size = 2
+        self.bst.root.size = 4
+        self.assertTrue(self.bst.is_size_consistent)
+        
+        self.bst.root.right.left = self.bst._Node(4, 'e')
+        self.bst.root.right.size = 2
+        self.bst.root.size = 5
+        self.assertTrue(self.bst.is_size_consistent)
+        
 if __name__ == "__main__":
     unittest.main()

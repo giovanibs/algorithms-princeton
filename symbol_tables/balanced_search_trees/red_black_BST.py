@@ -82,11 +82,12 @@ class RedBlackBST(BST):
             if color not in [None, RedBlackBST.BLACK, RedBlackBST.RED]:
                 raise ValueError("Invalid color value.")
 
+        def __repr__(self) -> str:
+            return f"_Node(key={self.key}, val={self.val}, size={self.size}, color={'RED' if self.color else 'BLACK'})"
     # ------------------------------------------------
     #   New methods/properties.
     # ------------------------------------------------
-    @property
-    def is_red(node):
+    def is_red(self, node):
         """
         Is `node` RED?
         By default, null links are BLACK.
@@ -205,6 +206,35 @@ class RedBlackBST(BST):
         return self._is_size_consistent(subtree.left) and \
             self._is_size_consistent(subtree.right)
     
+    @property
+    def is_23tree(self):
+        """
+        Checks whether the tree is a 2-2 tree:
+        """
+        return self._is_23tree(self.root)
+    
+    def _is_23tree(self, subtree):
+        """
+        - No right-leaning red link;
+        - AND no node is connected to two red links.
+        """
+        if subtree is None:
+            return True
+        
+        # no red right links
+        if self.is_red(node=subtree.right):
+            return False
+        
+        # no node is connected to two red links
+        # PS.: exempt root because it should never be RED
+        if (subtree is not self.root) and \
+            self.is_red(subtree) and \
+                self.is_red(subtree.left):
+            return False
+        
+        return self._is_23tree(subtree.left) and self._is_23tree(subtree.right)
+        
+        
     # ------------------------------------------------
     #   Overridden BST methods/properties.
     # ------------------------------------------------
@@ -396,6 +426,66 @@ class TestsRedBlackBST(TestsBST):
         self.bst.root.right.size = 2
         self.bst.root.size = 5
         self.assertTrue(self.bst.is_size_consistent)
+    
+    def test_is_red(self):
+        # IS RED
+        red_node = self.bst._Node(1, 'a', color=True)
+        self.assertTrue(self.bst.is_red(red_node))
+        # IS NOT RED
+        black_node = self.bst._Node(1, 'a')
+        self.assertFalse(self.bst.is_red(black_node))
+        
+    def test_is_23tree_empty_tree(self):
+        self.assertTrue(self.bst.is_23tree)
+        
+    def test_is_not_23tree(self):
+        # right-leaning red links
+        self.bst.root = root = self.bst._Node(5, 'a')
+        root.right = self.bst._Node(7, 'b', color=True)
+        self.assertFalse(self.bst.is_23tree)
+        
+        # deeper right-leaning red link
+        root.right = self.bst._Node(7, 'b') # reset color
+        self.assertTrue(self.bst.is_23tree)
+        root.left = self.bst._Node(2, 'c')
+        root.left.right = self.bst._Node(4, 'd', color=True)
+        
+        # AND no node is connected to two red links
+        root.left.right = self.bst._Node(4, 'd') # reset
+        self.assertTrue(self.bst.is_23tree)
+        root.right.left = self.bst._Node(6, 'b', color=True)
+        root.right.right = self.bst._Node(8, 'b', color=True)
+        self.assertFalse(self.bst.is_23tree)
+    
+    def test_is_23tree(self):
+        # no right-leaning red links
+        # AND no node is connected to two red links
+        
+        self.bst.root = root = self.bst._Node(5, 'a')
+        self.assertTrue(self.bst.is_23tree)
+        
+        root.right = self.bst._Node(7, 'b')
+        self.assertTrue(self.bst.is_23tree)
+        
+        root.left = self.bst._Node(3, 'c', color=True)
+        self.assertTrue(self.bst.is_23tree)
+        
+        root.left = self.bst._Node(3, 'c')                    # reset
+        root.left.left = self.bst._Node(2, 'd', color=True)
+        root.left.right = self.bst._Node(4, 'e')
+        self.assertTrue(self.bst.is_23tree)
+        
+        root.right.left = self.bst._Node(6, 'b', color=True)
+        root.right.right = self.bst._Node(8, 'b', color=False)
+        self.assertTrue(self.bst.is_23tree)
         
 if __name__ == "__main__":
-    unittest.main()
+    bst = RedBlackBST()
+    bst.root = bst._Node(5, 'a')
+    bst.root.right = bst._Node(7, 'b', color=True)
+    
+    print(f"{bst.root = }")
+    print(f"{bst.root.left = }")
+    print(f"{bst.root.right = }")
+    
+    print(bst.is_23tree)

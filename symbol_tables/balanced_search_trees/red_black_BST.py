@@ -233,7 +233,37 @@ class RedBlackBST(BST):
             return False
         
         return self._is_23tree(subtree.left) and self._is_23tree(subtree.right)
+    
+    @property
+    def is_balanced(self):
+        """
+        do all paths from root to leaf have
+        same number of black edges?
+        """
+        black = 0
+        subtree = self.root
         
+        while subtree is not None:
+            if self.is_red(subtree):
+                black += 1
+                subtree = subtree.left
+                
+        return self._is_balanced(subtree, black)
+    
+    def _is_balanced(self, subtree, black):
+        """
+        - Every path from root to null link has same number
+        of black links.
+        - Never two red links in-a-row.
+        """
+        if subtree is None:
+            return black == 0
+        
+        if not self.is_red(subtree):
+            black -= 1
+            
+        return self._is_balanced(subtree.left, black) and \
+            self._is_balanced(subtree.right, black)
         
     # ------------------------------------------------
     #   Overridden BST methods/properties.
@@ -478,7 +508,13 @@ class TestsRedBlackBST(TestsBST):
         root.right.left = self.bst._Node(6, 'b', color=True)
         root.right.right = self.bst._Node(8, 'b', color=False)
         self.assertTrue(self.bst.is_23tree)
-        
+    
+    def test_is_balanced_empty_tree(self):
+        self.assertTrue(self.bst.is_balanced)
+    
+    def test_is_not_balanced(self):
+        self.assertTrue(self.bst.is_balanced)
+    
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.root = bst._Node(5, 'a')

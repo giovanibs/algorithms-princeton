@@ -139,6 +139,48 @@ class RedBlackBST(BST):
         raise NotImplementedError
 
     # ------------------------------------------------
+    #   Check integrity of red-black tree data structure.
+    # ------------------------------------------------
+    def check(self):
+        """
+        Checks for:
+        - symmetric order
+        - subtree size consistency
+        - 2-3 tree
+        - balanced tree
+        """
+    
+    @property
+    def is_BST(self):
+        """
+        Does this binary tree satisfy symmetric order?
+        Note: this test also ensures that data structure is a binary
+        tree since order is strict.
+        """
+        return self._is_BST(self.root, None, None)
+        
+    def _is_BST(self, subtree, lo, hi):
+        """
+        Is the tree rooted at `subtree` a BST with all keys strictly
+        between `lo` and `hi` (both inclusive)?
+        If `lo` or `hi` is null, treat as empty constraint.
+        """
+        if subtree is None:
+            return True
+        
+        this_key = subtree.key
+        
+        if (lo is not None) and (this_key <= lo):
+            return False
+        
+        if (hi is not None) and (this_key >= hi):
+            return False
+        
+        # key == 2
+        return self._is_BST(subtree.left, lo=lo, hi=this_key) \
+            and self._is_BST(subtree.right, lo=this_key, hi=hi)
+    
+    # ------------------------------------------------
     #   Overridden BST methods/properties.
     # ------------------------------------------------
     def put(self, k, v):
@@ -254,6 +296,44 @@ except:
 class TestsRedBlackBST(TestsBST):
     def setUp(self):
         self.bst = RedBlackBST()
+        
+    def test_is_BST_empty_tree(self):
+        self.assertTrue(self.bst.is_BST)
+    
+    def test_is_not_a_BST(self):
+        # left subtree > root
+        self.bst.root = self.bst._Node(1, 'a')
+        self.bst.root.left = self.bst._Node(2, 'b')
+        self.assertFalse(self.bst.is_BST)
+        
+        # right subtree < root
+        self.bst.root = self.bst._Node(1, 'a')                # reset
+        self.bst.root.right = self.bst._Node(0, 'c')          # not ok
+        self.assertFalse(self.bst.is_BST)
+        
+        # deeper tree
+        self.bst.root = self.bst._Node(1, 'a')                # reset
+        self.bst.root.right = self.bst._Node(3, 'd')          # ok
+        self.bst.root.right.right = self.bst._Node(2, 'b')    # not ok
+        self.assertFalse(self.bst.is_BST)
+             
+    def test_is_BST(self):
+        # left subtree < root
+        self.bst.root = self.bst._Node(1, 'a')
+        self.bst.root.left = self.bst._Node(0, 'b')
+        self.assertTrue(self.bst.is_BST)
+        
+        # right subtree > root
+        self.bst.root = self.bst._Node(1, 'a')                # reset
+        self.bst.root.right = self.bst._Node(2, 'c')
+        self.assertTrue(self.bst.is_BST)
+        
+        # deeper tree
+        self.bst.root = self.bst._Node(1, 'a')                # reset
+        self.bst.root.right = self.bst._Node(3, 'b')
+        self.bst.root.right.right = self.bst._Node(4, 'c')
+        self.bst.root.right.left = self.bst._Node(2, 'd')
+        self.assertTrue(self.bst.is_BST)
 
 
 if __name__ == "__main__":

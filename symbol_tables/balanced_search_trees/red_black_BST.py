@@ -64,6 +64,10 @@ class RedBlackBST(BST):
 
     RED = True
     BLACK = False
+    NOT_BST = "Not in symmetric order"
+    NOT_23TREE = "Not a 2-3 tree"
+    NOT_BALANCED = "Not balanced"
+    NOT_SIZE_CONSISTENT = "Subtree counts not consistent"
 
     def __init__(self):
         super().__init__()
@@ -132,24 +136,22 @@ class RedBlackBST(BST):
         """
         raise NotImplementedError
 
-    def balance(self, subtree):
-        """
-        Restore red-black tree invariant.
-        """
-        raise NotImplementedError
-
     # ------------------------------------------------
     #   Check integrity of red-black tree data structure.
     # ------------------------------------------------
-    def check(self):
+    def assert_integrity(self):
         """
         Checks for:
         - symmetric order
-        - subtree size consistency
         - 2-3 tree
         - balanced tree
+        - subtree size consistency
         """
-    
+        assert self.is_BST,             RedBlackBST.NOT_BST
+        assert self.is_23tree,          RedBlackBST.NOT_23TREE
+        assert self.is_balanced,        RedBlackBST.NOT_BALANCED
+        assert self.is_size_consistent, RedBlackBST.NOT_SIZE_CONSISTENT
+        
     @property
     def is_BST(self):
         """
@@ -579,7 +581,38 @@ class TestsRedBlackBST(TestsBST):
         root.left.color = False
         self.assertTrue(self.bst.is_23tree)
         self.assertTrue(self.bst.is_balanced)
-                
+    
+    def test_assert_integrity_empty_tree(self):
+        self.bst.assert_integrity()
+        
+    def test_assert_integrity_NOT_BST(self):
+        self.bst.root = self.bst._Node(1, 'a', color=False)
+        self.bst.root.left = self.bst._Node(2, 'a', color=True)
+        
+        with self.assertRaisesRegex(AssertionError, RedBlackBST.NOT_BST):
+            self.bst.assert_integrity()
+        
+    def test_assert_integrity_NOT_23TREE(self):
+        self.bst.root = self.bst._Node(5, 'a', color=False)
+        self.bst.root.right = self.bst._Node(7, 'b', color=True)
+        
+        with self.assertRaisesRegex(AssertionError, RedBlackBST.NOT_23TREE):
+            self.bst.assert_integrity()
+            
+    def test_assert_integrity_NOT_BALANCED(self):
+        self.bst.root = self.bst._Node(5, 'a', color=False)
+        self.bst.root.right = self.bst._Node(7, 'b', color=False)
+
+        with self.assertRaisesRegex(AssertionError, RedBlackBST.NOT_BALANCED):
+            self.bst.assert_integrity()
+            
+    def test_assert_integrity_NOT_SIZE_CONSISTENT(self):
+        self.bst.root = self.bst._Node(3, 'a', size=2)
+
+        with self.assertRaisesRegex(AssertionError,
+                                    RedBlackBST.NOT_SIZE_CONSISTENT):
+            self.bst.assert_integrity()
+            
     
 if __name__ == "__main__":
     bst = RedBlackBST()

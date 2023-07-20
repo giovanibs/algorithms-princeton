@@ -88,6 +88,7 @@ class RedBlackBST(BST):
 
         def __repr__(self) -> str:
             return f"_Node(key={self.key}, val={self.val}, size={self.size}, color={'RED' if self.color else 'BLACK'})"
+    
     # ------------------------------------------------
     #   New methods/properties.
     # ------------------------------------------------
@@ -101,11 +102,34 @@ class RedBlackBST(BST):
 
         return node.color
 
-    def rotate_left(self, subtree):
+    def _rotate_left(self, subtree):
         """
-        Make a right-leaning link lean to the left.
+        Orient a (temporarily) right-leaning red link to lean left.
+        
+        (a) save `red_right` node;
+        
+        (b) move nodes between `root` and `red_right`,
+        i.e. `red_right.left`, to `subtree.right`;
+        
+        (c) set `red_right` left link to node at `root`
+        
+        (d) update colors
+        
+        (e) update sizes
+        
+        (f) return the new subtree root
         """
-        raise NotImplementedError
+        red_right = subtree.right           # (a)
+        subtree.right = red_right.left      # (b)
+        red_right.left = subtree            # (c)
+        # (d)
+        red_right.color = subtree.color
+        subtree.color = RedBlackBST.RED
+        # (e)
+        red_right.size = subtree.size
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        # (f)
+        return red_right
 
     def rotate_right(self, subtree):
         """
@@ -151,6 +175,8 @@ class RedBlackBST(BST):
         assert self.is_23tree,          RedBlackBST.NOT_23TREE
         assert self.is_balanced,        RedBlackBST.NOT_BALANCED
         assert self.is_size_consistent, RedBlackBST.NOT_SIZE_CONSISTENT
+        
+        return True
         
     @property
     def is_BST(self):
@@ -613,6 +639,41 @@ class TestsRedBlackBST(TestsBST):
                                     RedBlackBST.NOT_SIZE_CONSISTENT):
             self.bst.assert_integrity()
             
+    def test_rotate_left(self):
+        root = self.bst.root = self.bst._Node(5, 'a', size=2, color=False)
+        root.right = self.bst._Node(7, 'c', size=1, color=True)
+        #   (5)
+        #  /  \\
+        #     (7)
+        self.assertFalse(self.bst.is_23tree)
+        self.bst.root = self.bst._rotate_left(root)
+        #   (7)
+        #  //  \
+        # (5)
+        self.bst.assert_integrity()
+    
+    def test_rotate_left_more_nodes(self):
+        # very HYPOTHETICAL case for testing purposes
+        root = self.bst.root = self.bst._Node(5, 'a', size=4, color=False)
+        root.left = self.bst._Node(4, 'b', size=1, color=False)
+        root.right = self.bst._Node(7, 'c', size=2, color=True)
+        root.right.left = self.bst._Node(6, 'd', size=1, color=False)
+        #       (5)
+        #      /   \\
+        #    (4)   (7)
+        #          /
+        #       (6)
+        self.assertFalse(self.bst.is_23tree)
+        
+        self.bst.root = self.bst._rotate_left(root)
+        #        (7)
+        #      //   \
+        #    (5)
+        #   /   \
+        # (4)    (6)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_size_consistent)
+        
     
 if __name__ == "__main__":
     bst = RedBlackBST()

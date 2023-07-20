@@ -71,7 +71,7 @@ class RedBlackBST(BST):
     class _Node:
         def __init__(self, key, val, size=1, color=None):
             self.assert_color(color)
-            self.color = color or RedBlackBST.BLACK
+            self.color = RedBlackBST.RED if color is None else color
             self.key = key
             self.val = val
             self.left = None
@@ -209,7 +209,7 @@ class RedBlackBST(BST):
     @property
     def is_23tree(self):
         """
-        Checks whether the tree is a 2-2 tree:
+        Checks whether the tree is a 2-3 tree:
         """
         return self._is_23tree(self.root)
     
@@ -231,24 +231,26 @@ class RedBlackBST(BST):
             self.is_red(subtree) and \
                 self.is_red(subtree.left):
             return False
-        
         return self._is_23tree(subtree.left) and self._is_23tree(subtree.right)
     
     @property
     def is_balanced(self):
         """
-        do all paths from root to leaf have
-        same number of black edges?
+        A perfectly balanced red-black-tree is one whose
+        null links are all the same distance from the root,
+        as any 2-3-tree.
         """
-        black = 0
+        black = 0 # number of black links on path from root to min
         subtree = self.root
         
+        # min path as reference for number of black links
         while subtree is not None:
-            if self.is_red(subtree):
+            if not self.is_red(subtree):
                 black += 1
-                subtree = subtree.left
-                
-        return self._is_balanced(subtree, black)
+            subtree = subtree.left
+        
+        # check starting from root
+        return self._is_balanced(self.root, black)
     
     def _is_balanced(self, subtree, black):
         """
@@ -256,12 +258,15 @@ class RedBlackBST(BST):
         of black links.
         - Never two red links in-a-row.
         """
+        # hit a leaf, aka null link
         if subtree is None:
             return black == 0
         
+        # decrease reference count
         if not self.is_red(subtree):
             black -= 1
-            
+        
+        # recursively check left and right subtree
         return self._is_balanced(subtree.left, black) and \
             self._is_balanced(subtree.right, black)
         
@@ -386,102 +391,110 @@ class TestsRedBlackBST(TestsBST):
     
     def test_is_not_a_BST(self):
         # left subtree > root
-        self.bst.root = self.bst._Node(1, 'a')
-        self.bst.root.left = self.bst._Node(2, 'b')
+        self.bst.root = root = self.bst._Node(1, 'a')
+        root.left = self.bst._Node(2, 'b')
         self.assertFalse(self.bst.is_BST)
         
         # right subtree < root
-        self.bst.root = self.bst._Node(1, 'a')                # reset
-        self.bst.root.right = self.bst._Node(0, 'c')          # not ok
+        root.left = None
+        root.right = self.bst._Node(0, 'c')          # not ok
         self.assertFalse(self.bst.is_BST)
         
         # deeper tree
-        self.bst.root = self.bst._Node(1, 'a')                # reset
-        self.bst.root.right = self.bst._Node(3, 'd')          # ok
-        self.bst.root.right.right = self.bst._Node(2, 'b')    # not ok
+        root.right = self.bst._Node(3, 'd')          # ok
+        root.right.right = self.bst._Node(2, 'b')    # not ok
         self.assertFalse(self.bst.is_BST)
              
     def test_is_BST(self):
         # left subtree < root
-        self.bst.root = self.bst._Node(1, 'a')
-        self.bst.root.left = self.bst._Node(0, 'b')
+        root = self.bst.root = self.bst._Node(1, 'a')
+        root.left = self.bst._Node(0, 'b')
         self.assertTrue(self.bst.is_BST)
         
         # right subtree > root
-        self.bst.root = self.bst._Node(1, 'a')                # reset
-        self.bst.root.right = self.bst._Node(2, 'c')
+        root.left = None
+        root.right = self.bst._Node(2, 'c')
         self.assertTrue(self.bst.is_BST)
         
         # deeper tree
-        self.bst.root = self.bst._Node(1, 'a')                # reset
-        self.bst.root.right = self.bst._Node(3, 'b')
-        self.bst.root.right.right = self.bst._Node(4, 'c')
-        self.bst.root.right.left = self.bst._Node(2, 'd')
+        root.right = self.bst._Node(3, 'b')
+        root.right.right = self.bst._Node(4, 'c')
+        root.right.left = self.bst._Node(2, 'd')
         self.assertTrue(self.bst.is_BST)
 
     def test_is_size_consistent_empty_tree(self):
         self.assertTrue(self.bst.is_size_consistent)
     
     def test_is_size_consistent_false(self):
-        self.bst.root = self.bst._Node(3, 'a', size=2)
+        root = self.bst.root = self.bst._Node(3, 'a', size=2)
         self.assertFalse(self.bst.is_size_consistent)
         
-        self.bst.root.left = self.bst._Node(2, 'b', size=2)     # nok
-        self.bst.root.size = 2                                  # ok
+        root.left = self.bst._Node(2, 'b', size=2)     # nok
+        root.size = 2                                  # ok
         self.assertFalse(self.bst.is_size_consistent)
         
-        self.bst.root.right = self.bst._Node(5, 'c', size=3)    # nok
-        self.bst.root.right.left = self.bst._Node(4, 'e', size=1) # ok
-        self.bst.root.size = 4
+        root.right = self.bst._Node(5, 'c', size=3)    # nok
+        root.right.left = self.bst._Node(4, 'e', size=1) # ok
+        root.size = 4
         self.assertFalse(self.bst.is_size_consistent)
         
     def test_is_size_consistent(self):
-        self.bst.root = self.bst._Node(3, 'a')
+        root = self.bst.root = self.bst._Node(3, 'a')
         self.assertTrue(self.bst.is_size_consistent)
         
-        self.bst.root.left = self.bst._Node(2, 'b')
-        self.bst.root.size = 2
+        root.left = self.bst._Node(2, 'b')
+        root.size = 2
         self.assertTrue(self.bst.is_size_consistent)
         
-        self.bst.root.right = self.bst._Node(5, 'c')
-        self.bst.root.size = 3
+        root.right = self.bst._Node(5, 'c')
+        root.size = 3
         self.assertTrue(self.bst.is_size_consistent)
         
-        self.bst.root.left.left = self.bst._Node(1, 'd')
-        self.bst.root.left.size = 2
-        self.bst.root.size = 4
+        root.left.left = self.bst._Node(1, 'd')
+        root.left.size = 2
+        root.size = 4
         self.assertTrue(self.bst.is_size_consistent)
         
-        self.bst.root.right.left = self.bst._Node(4, 'e')
-        self.bst.root.right.size = 2
-        self.bst.root.size = 5
+        root.right.left = self.bst._Node(4, 'e')
+        root.right.size = 2
+        root.size = 5
         self.assertTrue(self.bst.is_size_consistent)
     
     def test_is_red(self):
         # IS RED
         red_node = self.bst._Node(1, 'a', color=True)
         self.assertTrue(self.bst.is_red(red_node))
+        
         # IS NOT RED
-        black_node = self.bst._Node(1, 'a')
+        black_node = self.bst._Node(1, 'a', color=False)
         self.assertFalse(self.bst.is_red(black_node))
+        
+        # DEFAULT COLOR IS RED!
+        new_node = self.bst._Node(1, 'a')
+        self.assertTrue(self.bst.is_red(new_node))
         
     def test_is_23tree_empty_tree(self):
         self.assertTrue(self.bst.is_23tree)
         
-    def test_is_not_23tree(self):
-        # right-leaning red links
-        self.bst.root = root = self.bst._Node(5, 'a')
+    def test_is_23tree_right_red_link(self):
+        # right-leaning red link
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
         root.right = self.bst._Node(7, 'b', color=True)
         self.assertFalse(self.bst.is_23tree)
         
         # deeper right-leaning red link
-        root.right = self.bst._Node(7, 'b') # reset color
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
         self.assertTrue(self.bst.is_23tree)
-        root.left = self.bst._Node(2, 'c')
+        root.left = self.bst._Node(2, 'c', color=True)
+        self.assertTrue(self.bst.is_23tree)
+        root.left.color = False
         root.left.right = self.bst._Node(4, 'd', color=True)
+        self.assertFalse(self.bst.is_23tree)
         
-        # AND no node is connected to two red links
-        root.left.right = self.bst._Node(4, 'd') # reset
+    def test_is_23tree_two_red_link(self):
+        # node connected to two red links, aka 4-node
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
+        root.right = self.bst._Node(7, 'b', color=False)
         self.assertTrue(self.bst.is_23tree)
         root.right.left = self.bst._Node(6, 'b', color=True)
         root.right.right = self.bst._Node(8, 'b', color=True)
@@ -490,19 +503,18 @@ class TestsRedBlackBST(TestsBST):
     def test_is_23tree(self):
         # no right-leaning red links
         # AND no node is connected to two red links
-        
-        self.bst.root = root = self.bst._Node(5, 'a')
+        self.bst.root = root = self.bst._Node(5, 'a', color=False)
         self.assertTrue(self.bst.is_23tree)
         
-        root.right = self.bst._Node(7, 'b')
+        root.right = self.bst._Node(7, 'b', color=False)
         self.assertTrue(self.bst.is_23tree)
         
         root.left = self.bst._Node(3, 'c', color=True)
         self.assertTrue(self.bst.is_23tree)
         
-        root.left = self.bst._Node(3, 'c')                    # reset
         root.left.left = self.bst._Node(2, 'd', color=True)
-        root.left.right = self.bst._Node(4, 'e')
+        root.left.color = False
+        root.left.right = self.bst._Node(4, 'e', color=False)
         self.assertTrue(self.bst.is_23tree)
         
         root.right.left = self.bst._Node(6, 'b', color=True)
@@ -512,8 +524,62 @@ class TestsRedBlackBST(TestsBST):
     def test_is_balanced_empty_tree(self):
         self.assertTrue(self.bst.is_balanced)
     
-    def test_is_not_balanced(self):
+    def test_is_NOT_balanced(self):
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
+        self.assertTrue(self.bst.is_23tree)
         self.assertTrue(self.bst.is_balanced)
+        
+        # not balanced, must rotate left
+        root.right = self.bst._Node(7, 'b', color=False)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertFalse(self.bst.is_balanced)
+        # fix
+        root.right.left = root
+        root = self.bst.root = root.right
+        root.left.right = None
+        root.left.color = True
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+        
+    def test_is_NOT_balanced_4node(self):
+        # not balanced bc 4-link-node
+        root = self.bst.root = self.bst._Node(7, 'a', color=False)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+        root.left = self.bst._Node(5, 'b', color=True)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+        # 4th link coming up
+        root.right = self.bst._Node(9, 'c', color=False)
+        root.color = True
+        self.assertTrue(self.bst.is_23tree)
+        self.assertFalse(self.bst.is_balanced)
+        
+    def test_is_balanced(self):
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+        
+        root.right = self.bst._Node(7, 'b', color=False)
+        self.assertTrue(self.bst.is_23tree)
+        self.assertFalse(self.bst.is_balanced)
+        # rotate left
+        root.right.left = root
+        root = self.bst.root = root.right
+        root.left.right = None
+        root.left.color = True
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+        
+        root.right = self.bst._Node(9, 'c', color=False)
+        # not balanced bc 4-node
+        self.assertTrue(self.bst.is_23tree)
+        self.assertFalse(self.bst.is_balanced)
+        # split 4-node
+        root.left.color = False
+        self.assertTrue(self.bst.is_23tree)
+        self.assertTrue(self.bst.is_balanced)
+                
     
 if __name__ == "__main__":
     bst = RedBlackBST()

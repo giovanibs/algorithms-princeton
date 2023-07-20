@@ -119,23 +119,50 @@ class RedBlackBST(BST):
         
         (f) return the new subtree root
         """
-        red_right = subtree.right           # (a)
-        subtree.right = red_right.left      # (b)
-        red_right.left = subtree            # (c)
+        right_node = subtree.right           # (a)
+        subtree.right = right_node.left      # (b)
+        right_node.left = subtree            # (c)
         # (d)
-        red_right.color = subtree.color
+        right_node.color = subtree.color
         subtree.color = RedBlackBST.RED
         # (e)
-        red_right.size = subtree.size
+        right_node.size = subtree.size
         subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
         # (f)
-        return red_right
+        return right_node
 
-    def rotate_right(self, subtree):
+    def _rotate_right(self, subtree):
         """
-        Make a left-leaning link lean to the right.
+        Orient a left-leaning link to the left.
+        
+        (a) save `left_node` node;
+        
+        (b) move nodes between `left_node` and `subtree`,
+        i.e. `left_node.right`, to `subtree.left`;
+        
+        (c) set `left_node`'s right link to node at `root`
+        
+        (d) update colors
+        
+        (e) update sizes
+        
+        (f) return the new subtree root
+        
+                        (subtree)
+                       /         \
+            (left_node)
         """
-        raise NotImplementedError
+        left_node = subtree.left            # (a)
+        subtree.left = left_node.right      # (b)
+        left_node.right = subtree           # (c)
+        # (d)
+        left_node.color = subtree.color
+        subtree.color = RedBlackBST.RED
+        # (e)
+        left_node.size = subtree.size
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        # (f)
+        return left_node
 
     def flip_colors(self, subtree):
         """
@@ -238,6 +265,8 @@ class RedBlackBST(BST):
     def is_23tree(self):
         """
         Checks whether the tree is a 2-3 tree:
+        - No right-leaning red link;
+        - AND no node is connected to two red links.
         """
         return self._is_23tree(self.root)
     
@@ -674,6 +703,43 @@ class TestsRedBlackBST(TestsBST):
         self.assertTrue(self.bst.is_23tree)
         self.assertTrue(self.bst.is_size_consistent)
         
+    def test_rotate_right_simple(self):
+        previous_root = self.bst.root = self.bst._Node(7, 'a', size=2, color=False)
+        previous_left_node = self.bst.root.left = self.bst._Node(5, 'c', size=1, color=True)
+        #   (7)
+        #  //  \
+        # (5)
+        self.bst.root = self.bst._rotate_right(self.bst.root)
+        #    (5)
+        #   /  \\
+        #      (7)
+        self.assertEqual(self.bst.root, previous_left_node)
+        self.assertEqual(self.bst.root.right, previous_root)
+        self.assertTrue(self.bst.is_size_consistent)
+    
+    def test_rotate_right_more_nodes(self):
+        # highly HYPOTHETICAL case for testing purposes
+        previous_root = self.bst.root = self.bst._Node(7, 'a', size=5, color=False)
+        self.bst.root.right = self.bst._Node(8, 'e', size=1, color=False)
+        previous_left_node = self.bst.root.left = self.bst._Node(5, 'b', size=3, color=True)
+        previous_between = self.bst.root.left.right = self.bst._Node(6, 'c', size=1, color=False)
+        previous_left_node.left = self.bst._Node(4, 'd', size=1, color=False)
+        #      (7)
+        #     //  \
+        #    (5)   (8)
+        #   /   \
+        # (4)   (6)
+        self.bst.root = self.bst._rotate_right(self.bst.root)
+        #      (5)
+        #      / \
+        #   (4)   (7)
+        #         / \
+        #      (6)   (8)
+        self.assertEqual(self.bst.root, previous_left_node)
+        self.assertEqual(self.bst.root.right, previous_root)
+        self.assertEqual(self.bst.root.right.left, previous_between)
+        self.assertTrue(self.bst.is_size_consistent)
+    
     
 if __name__ == "__main__":
     bst = RedBlackBST()

@@ -164,12 +164,23 @@ class RedBlackBST(BST):
         # (f)
         return left_node
 
-    def flip_colors(self, subtree):
+    def _flip_colors(self, subtree):
         """
         Flip the colors of a node and its two children.
         `subtree` must have opposite color of its two children.
         """
-        raise NotImplementedError
+        if subtree is None or subtree.left is None or subtree.right is None:
+            return
+        
+        if (subtree.left.color != subtree.right.color) or \
+            (subtree.color == subtree.left.color):
+            return        
+        
+        subtree.color       = not subtree.color
+        subtree.left.color  = not subtree.left.color
+        subtree.right.color = not subtree.right.color
+        
+        return True
 
     def move_red_left(self, subtree):
         """
@@ -740,6 +751,49 @@ class TestsRedBlackBST(TestsBST):
         self.assertEqual(self.bst.root.right.left, previous_between)
         self.assertTrue(self.bst.is_size_consistent)
     
+    def test_flip_colors_empty_tree(self):
+        self.assertFalse(self.bst._flip_colors(self.bst.root))
+    
+    def test_flip_colors_one_null_child(self):
+        # left child is None
+        root = self.bst.root = self.bst._Node(5, 'a', color=False)
+        root.right = self.bst._Node(7, 'b', color=False)
+        self.assertFalse(self.bst._flip_colors(self.bst.root))
+        
+        # right child is None
+        root.right = None
+        root.left = self.bst._Node(3, 'c', color=True)
+        self.assertFalse(self.bst._flip_colors(self.bst.root))
+        
+    def test_flip_colors_same_color_parent_child(self):
+        # all black
+        self.bst.root = root = self.bst._Node(5, 'a', color=False)
+        root.right = self.bst._Node(7, 'b', color=False)
+        root.left = self.bst._Node(3, 'c', color=False)
+        self.assertFalse(self.bst._flip_colors(self.bst.root))
+        # all red
+        root.color = True
+        root.right.color = True
+        root.left.color = True
+        self.assertFalse(self.bst._flip_colors(self.bst.root))
+
+    def test_flip_colors(self):
+        # black parent
+        self.bst.root = root = self.bst._Node(5, 'a', color=False)
+        left_child =root.left = self.bst._Node(3, 'c', color=True)
+        right_child =root.right = self.bst._Node(7, 'b', color=True)
+        
+        self.assertTrue(self.bst._flip_colors(root))
+        self.assertTrue(root.color)
+        self.assertFalse(left_child.color)
+        self.assertFalse(right_child.color)
+        
+        # flip again (red parent)
+        self.assertTrue(self.bst._flip_colors(root))
+        self.assertFalse(root.color)
+        self.assertTrue(left_child.color)
+        self.assertTrue(right_child.color)
+        
     
 if __name__ == "__main__":
     bst = RedBlackBST()

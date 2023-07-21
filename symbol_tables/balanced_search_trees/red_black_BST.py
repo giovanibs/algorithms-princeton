@@ -463,7 +463,8 @@ class RedBlackBST(BST):
             dot.render('img/red_black_bst', view=True, format='png')
             return
         
-        dot.node(str(root.key))
+        root_color = "red" if root.color else "black"
+        dot.node(str(root.key), color=root_color)
 
         def add_nodes_edges(node):
             
@@ -486,7 +487,7 @@ class RedBlackBST(BST):
                 color = "black"
                 penwidth = "1"
                 
-            dot.node(left_node, shape=shape)
+            dot.node(left_node, shape=shape, color=color)
             dot.edge(
                 str(node.key),  # node from
                 left_node,      # node to
@@ -518,7 +519,7 @@ class RedBlackBST(BST):
                 color = "black"
                 penwidth = "1"
                 
-            dot.node(right_node, shape=shape)
+            dot.node(right_node, shape=shape, color=color)
             dot.edge(
                 str(node.key),  # node from
                 right_node,      # node to
@@ -778,16 +779,19 @@ class TestsRedBlackBST(TestsBST):
             self.bst.assert_integrity()
             
     def test_rotate_left(self):
-        root = self.bst.root = self.bst._Node(5, 'a', size=2, color=False)
-        root.right = self.bst._Node(7, 'c', size=1, color=True)
+        previous_root = self.bst.root = self.bst._Node(5, 'a', size=2, color=False)
+        previous_right = previous_root.right = self.bst._Node(7, 'c', size=1, color=True)
         #   (5)
         #  /  \\
         #     (7)
         self.assertFalse(self.bst.is_23tree)
-        self.bst.root = self.bst._rotate_left(root)
+        self.bst.root = self.bst._rotate_left(previous_root)
         #   (7)
         #  //  \
         # (5)
+        self.assertEqual(self.bst.root, previous_right)
+        self.assertEqual(self.bst.root.left.key, 5)
+        self.assertTrue(previous_root.color)
         self.bst.assert_integrity()
     
     def test_rotate_left_more_nodes(self):
@@ -911,25 +915,11 @@ class TestsRedBlackBST(TestsBST):
     
 if __name__ == "__main__":
     bst = RedBlackBST()
-    bst.root = bst._Node(5, 'a')
-    
-    bst.root.left = bst._Node(3, 'c', color=True)
-    
-    bst.root.left.left = bst._Node(2, 'c', color=True)
-    bst.root.left.left.right = bst._Node(2.1, 'c', color=True)
-    bst.root.left.left.left = bst._Node(1.9, 'c', color=True)
-    
-    bst.root.left.right = bst._Node(4, 'c', color=False)
-    bst.root.left.right.right = bst._Node(4.1, 'c', color=False)
-    bst.root.left.right.left = bst._Node(3.9, 'c', color=False)
-    
-    bst.root.right = bst._Node(7, 'b', color=False)
-    bst.root.right.left = bst._Node(6, 'c', color=True)
-    bst.root.right.left.right = bst._Node(6.1, 'c', color=True)
-    bst.root.right.left.left = bst._Node(5.9, 'c', color=True)
-    
-    bst.root.right.right = bst._Node(8, 'c', color=False)
-    bst.root.right.right.right = bst._Node(8.1, 'c', color=False)
-    bst.root.right.right.left = bst._Node(7.9, 'c', color=False)
-    
+    root = bst.root = bst._Node(5, 'a', size=4, color=False)
+    root.left = bst._Node(4, 'b', size=1, color=True)
+    root.right = bst._Node(7, 'c', size=2, color=True)
+    # root.right.left = bst._Node(6, 'd', size=1, color=True)
+    # bst.assert_integrity()
+    # bst.root = bst._rotate_right(bst.root)
+    bst._flip_colors(bst.root)
     bst.display(bst.root)

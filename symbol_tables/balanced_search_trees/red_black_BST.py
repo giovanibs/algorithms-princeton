@@ -198,24 +198,25 @@ class RedBlackBST(BST):
         and `subtree.left.left` are black, make `subtree.left`
         or one of its children red.
         """
-        # if subtree is None or subtree.left is None or subtree.left.left is None:
-        #     return
+        if subtree is None:
+            return subtree
         
-        # if not subtree.color:
-        #     return
+        if not subtree.color:
+            return subtree
         
-        # if not all([subtree.left.color, subtree.left.left.color]):
-        #     return
+        if self.is_red(subtree.left) \
+                and self.is_red(subtree.left.left):
+            return subtree
         
-        # self._flip_colors(subtree)
+        self._flip_colors(subtree)
         
-        # # right subtree is red now, gotta fix it
-        # if self.is_red(subtree.right.left):
-        #     subtree.right = self._rotate_right(subtree.right)
-        #     subtree = self._rotate_left(subtree)
-        #     self._flip_colors(subtree)
-        # return subtree
-        raise NotImplementedError
+        # right subtree is red now, gotta fix it
+        if self.is_red(subtree.right.left):
+            subtree.right = self._rotate_right(subtree.right)
+            subtree = self._rotate_left(subtree)
+            self._flip_colors(subtree)
+        
+        return subtree
 
     def _move_red_right(self, subtree):
         """
@@ -225,6 +226,24 @@ class RedBlackBST(BST):
         """
         raise NotImplementedError
 
+    def restore_balance(self, subtree):
+        # right-leaning red link
+        if self.is_red(subtree.right) and not self.is_red(subtree.left):
+            subtree = self._rotate_left(subtree)
+        
+        # two consecutives left-leaning red links
+        if self.is_red(subtree.left) and self.is_red(subtree.left.left):
+            subtree = self._rotate_right(subtree)
+        
+        # two red children
+        if self.is_red(subtree.left) and self.is_red(subtree.right):
+            self._flip_colors(subtree)
+        
+        # update sizes
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        
+        return subtree
+        
     # ------------------------------------------------
     #   Check integrity of red-black tree data structure.
     # ------------------------------------------------
@@ -384,7 +403,8 @@ class RedBlackBST(BST):
         self.root.color = RedBlackBST.BLACK
 
     def _put2(self, k, v, subtree):
-        ### (1) puts new node just like a normal BST
+        # -------------------------------------------------
+        # (1) puts new node just like a normal BST
         if subtree is None:
             return self._Node(k, v)
         
@@ -397,32 +417,44 @@ class RedBlackBST(BST):
         else: # k > subtree.key
             subtree.right = self._put2(k, v, subtree.right)
         
-        ### (2) fix-up color links if any
-        # right-leaning red link
-        if self.is_red(subtree.right) and not self.is_red(subtree.left):
-            subtree = self._rotate_left(subtree)
-        
-        # two consecutives left-leaning red links
-        if self.is_red(subtree.left) and self.is_red(subtree.left.left):
-            subtree = self._rotate_right(subtree)
-        
-        # two red children
-        if self.is_red(subtree.left) and self.is_red(subtree.right):
-            self._flip_colors(subtree)
-        
-        # (3) update sizes
-        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
-        
-        return subtree
+        # -------------------------------------------------
+        # (2) fix-up color links if necessary
+        return self.restore_balance(subtree)
 
     def del_min(self):
-        return super().del_min()
-        # raise NotImplementedError
+        """
+        Removes the smallest key from the BST.
+        """
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        # if both children of root are black, set root to red to
+        # move_red_left in the future
+        if not self.is_red(self.root.left) \
+                and not self.is_red(self.root.right):
+            self.root.color = RedBlackBST.RED
 
+        self.root = self._del_min(self.root);
+        
+        if not self.is_empty:
+            # restore root BACK to BLACK
+            self.root.color = RedBlackBST.BLACK;
+        
     def _del_min(self, subtree):
-        return super()._del_min(subtree)
-        # raise NotImplementedError
-
+        """
+        """
+        # if given node is the smallest
+        if subtree.left is None:
+            # replace the node with its right link
+            return None
+        
+        if not self.is_red(subtree.left) and not self.is_red(subtree.left.left):
+            subtree = self._move_red_left(subtree)
+        
+        subtree.left = self._del_min(subtree.left)
+        
+        return self.restore_balance(subtree)
+    
     def del_max(self):
         return super().del_max()
         # raise NotImplementedError
@@ -586,7 +618,6 @@ class RedBlackBST(BST):
 #   TESTS
 # ------------------------------------------------
 import unittest
-
 try:
     from ..binary_search_trees.bst2 import TestsBST
 except:
@@ -982,16 +1013,21 @@ class TestsRedBlackBST(TestsBST):
         bst.put2(4, "date")
         bst.assert_integrity()
         
-    
+from time import sleep
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.put2(5, "apple")
     bst.put2(2, "banana")
-    bst.put2(8, "cherry")
     bst.put2(4, "date")
-    bst.put2(6, "eggplant")
-    bst.put2(1, "fig")
-    bst.put2(7, "guava")
     bst.put2(3, "hibiscus")
-    bst.assert_integrity()
+    bst.put2(1, "fig")
+    bst.put2(8, "cherry")
+    bst.put2(6, "eggplant")
+    bst.put2(7, "guava")
     bst.display()
+    sleep(3)
+    bst.root.color = True
+    bst._move_red_left(bst.root)
+    bst.display()
+    # bst.assert_integrity()
+    # bst.del_min()

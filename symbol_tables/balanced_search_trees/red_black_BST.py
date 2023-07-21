@@ -91,6 +91,14 @@ class RedBlackBST(BST):
         def __repr__(self) -> str:
             return f"_Node(key={self.key}, val={self.val}, size={self.size}, color={'RED' if self.color else 'BLACK'})"
     
+        def __eq__(self, other):
+            if isinstance(other, RedBlackBST._Node):
+                return self.key == other.key \
+                    and self.val == other.val \
+                    and self.size == other.size \
+                    and self.color == other.color
+            else:
+                raise TypeError
     # ------------------------------------------------
     #   New methods/properties.
     # ------------------------------------------------
@@ -360,13 +368,52 @@ class RedBlackBST(BST):
     # ------------------------------------------------
     #   Overridden BST methods/properties.
     # ------------------------------------------------
+    
+    # ---------------------------------------
+    # keeping these here until implementation
+    # is finished bc of the inherited tests
     def put(self, k, v):
         return super().put(k, v)
-        # raise NotImplementedError
 
     def _put(self, k, v, subtree):
         return super()._put(k, v, subtree)
-        # raise NotImplementedError
+    # ---------------------------------------
+    
+    def put2(self, k, v):
+        self.root = self._put2(k, v, self.root)
+        self.root.color = RedBlackBST.BLACK
+
+    def _put2(self, k, v, subtree):
+        ### (1) puts new node just like a normal BST
+        if subtree is None:
+            return self._Node(k, v)
+        
+        if k == subtree.key:
+            subtree.val = v
+        
+        elif k < subtree.key:
+            subtree.left = self._put2(k, v, subtree.left)
+        
+        else: # k > subtree.key
+            subtree.right = self._put2(k, v, subtree.right)
+        
+        ### (2) fix-up color links if any
+        # right-leaning red link
+        if self.is_red(subtree.right) and not self.is_red(subtree.left):
+            subtree = self._rotate_left(subtree)
+        
+        # two consecutives left-leaning red links
+        if self.is_red(subtree.left) and self.is_red(subtree.left.left):
+            subtree = self._rotate_right(subtree)
+        
+        # two red children
+        if self.is_red(subtree.left) and self.is_red(subtree.right):
+            self._flip_colors(subtree)
+        
+        # (3) update sizes
+        subtree.size = 1 + self._size(subtree.left) + self._size(subtree.right)
+        
+        return subtree
 
     def del_min(self):
         return super().del_min()
@@ -453,11 +500,12 @@ class RedBlackBST(BST):
     def _in_order(self, subtree, lo, hi, q):
         return super()._in_order(subtree, lo, hi, q)
 
-    def display(self, root):
+    def display(self):
         """
         Display tree by rendering it with Graphviz.
         """
         dot = graphviz.Digraph()
+        root = self.root
         if root is None:
             dot.node("", shape="point")
             dot.render('img/red_black_bst', view=True, format='png')
@@ -896,30 +944,54 @@ class TestsRedBlackBST(TestsBST):
         self.assertTrue(left_child.color)
         self.assertTrue(right_child.color)
         
-    # def test_move_red_left(self):
-    #     """
-    #     Assuming that `subtree` is red and both `subtree.left`
-    #     and `subtree.left.left` are black, make `subtree.left`
-    #     or one of its children red.
-    #     """
-    #     # RED subtree
-    #     root = self.bst.root = self.bst._Node(5, 'a', color=True)
+    def test_put_empty_tree(self):
+        bst = self.bst
+        bst.put2(5, 5)
+        self.assertEqual(bst.root.key, 5)
         
-    #     root.left = self.bst._Node(3, 'b', color=False)
-    #     root.left.left = self.bst._Node(1, 'c', color=False)
-    #     root.right = self.bst._Node(7, 'd', color=False)
+    def test_put_existing_key(self):
+        bst = self.bst
+        bst.put2(5, 5)
+        bst.put2(5, 10)
+        self.assertEqual(bst.root.key, 5)
+        self.assertEqual(bst.root.val, 10)
         
-    #     self.assertTrue(self.bst._move_red_left(root))
-    #     self.assertFalse(self.bst._rotate_left(root))
-    #     self.assertTrue(self.bst._rotate_left(root))
+    def test_put_left(self):
+        bst = self.bst
+        bst.put2(5, 5)
+        bst.put2(3, 3)
+        bst.assert_integrity()
+        expected_node = bst._Node(3, 3, color=True, size=1)
+        self.assertEqual(expected_node, bst.root.left)
+        
+    def test_put_right(self):
+        bst = self.bst
+        bst.put2(5, 5)
+        bst.put2(7, 7)
+        bst.assert_integrity()
+        expected_root = bst._Node(7, 7, color=False, size=2)
+        expected_left = bst._Node(5, 5, color=True, size=1)
+        self.assertEqual(expected_root, bst.root)
+        self.assertEqual(expected_left, bst.root.left)
+        
+    def test_put2(self):
+        bst = self.bst
+        bst.put2(5, "apple")
+        bst.put2(2, "banana")
+        bst.put2(7, "cherry")
+        bst.put2(4, "date")
+        bst.assert_integrity()
+        
     
 if __name__ == "__main__":
     bst = RedBlackBST()
-    root = bst.root = bst._Node(5, 'a', size=4, color=False)
-    root.left = bst._Node(4, 'b', size=1, color=True)
-    root.right = bst._Node(7, 'c', size=2, color=True)
-    # root.right.left = bst._Node(6, 'd', size=1, color=True)
-    # bst.assert_integrity()
-    # bst.root = bst._rotate_right(bst.root)
-    bst._flip_colors(bst.root)
-    bst.display(bst.root)
+    bst.put2(5, "apple")
+    bst.put2(2, "banana")
+    bst.put2(8, "cherry")
+    bst.put2(4, "date")
+    bst.put2(6, "eggplant")
+    bst.put2(1, "fig")
+    bst.put2(7, "guava")
+    bst.put2(3, "hibiscus")
+    bst.assert_integrity()
+    bst.display()

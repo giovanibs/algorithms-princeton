@@ -7,6 +7,8 @@ except:
     package_path = os.path.abspath("../")
     sys.path.append(package_path)
     from binary_search_trees.bst2 import BinarySearchTree as BST
+import graphviz
+from random import random
 
 class RedBlackBST(BST):
     """
@@ -182,15 +184,32 @@ class RedBlackBST(BST):
         
         return True
 
-    def move_red_left(self, subtree):
+    def _move_red_left(self, subtree):
         """
         Assuming that `subtree` is red and both `subtree.left`
         and `subtree.left.left` are black, make `subtree.left`
         or one of its children red.
         """
+        # if subtree is None or subtree.left is None or subtree.left.left is None:
+        #     return
+        
+        # if not subtree.color:
+        #     return
+        
+        # if not all([subtree.left.color, subtree.left.left.color]):
+        #     return
+        
+        # self._flip_colors(subtree)
+        
+        # # right subtree is red now, gotta fix it
+        # if self.is_red(subtree.right.left):
+        #     subtree.right = self._rotate_right(subtree.right)
+        #     subtree = self._rotate_left(subtree)
+        #     self._flip_colors(subtree)
+        # return subtree
         raise NotImplementedError
 
-    def move_red_right(self, subtree):
+    def _move_red_right(self, subtree):
         """
         Assuming that `subtree` is red and both `subtree.right`
         and `subtree.right.left` are black, make `subtree.right`
@@ -434,7 +453,82 @@ class RedBlackBST(BST):
     def _in_order(self, subtree, lo, hi, q):
         return super()._in_order(subtree, lo, hi, q)
 
+    def display(self, root):
+        """
+        Display tree by rendering it with Graphviz.
+        """
+        dot = graphviz.Digraph()
+        dot.node(str(root.key))
 
+        def add_nodes_edges(node):
+            
+            ### LEFT NODE
+            # LINK: Node or null
+            if node.left:
+                left_node = str(node.left.key)
+                shape = "circle"
+                weight = "1"
+            else:
+                left_node = "None" + str(random())
+                shape = "point"
+                weight = "2"
+            
+            # EDGE: RED or BLACK
+            if self.is_red(node.left):
+                color = "red"
+                penwidth = "3"
+            else:
+                color = "black"
+                penwidth = "1"
+                
+            dot.node(left_node, shape=shape)
+            dot.edge(
+                str(node.key),  # node from
+                left_node,      # node to
+                color=color,
+                penwidth=penwidth,
+                weight=weight,
+                )
+            
+            # recursively add more nodes
+            if node.left:
+                add_nodes_edges(node.left)
+            
+            ### RIGHT NODE
+            # LINK: Node or null
+            if node.right:
+                right_node = str(node.right.key)
+                shape = "circle"
+                weight = "1"
+            else:
+                right_node = "None" + str(random())
+                shape = "point"
+                weight = "2"
+            
+            # EDGE: RED or BLACK
+            if self.is_red(node.right):
+                color = "red"
+                penwidth = "3"
+            else:
+                color = "black"
+                penwidth = "1"
+                
+            dot.node(right_node, shape=shape)
+            dot.edge(
+                str(node.key),  # node from
+                right_node,      # node to
+                color=color,
+                penwidth=penwidth,
+                weight=weight,
+                )
+            
+            # recursively add more nodes
+            if node.right:
+                add_nodes_edges(node.right)
+            
+        add_nodes_edges(root)
+        dot.render('img/red_black_bst', view=True, format='png')
+    
 # ------------------------------------------------
 #   TESTS
 # ------------------------------------------------
@@ -794,14 +888,30 @@ class TestsRedBlackBST(TestsBST):
         self.assertTrue(left_child.color)
         self.assertTrue(right_child.color)
         
+    # def test_move_red_left(self):
+    #     """
+    #     Assuming that `subtree` is red and both `subtree.left`
+    #     and `subtree.left.left` are black, make `subtree.left`
+    #     or one of its children red.
+    #     """
+    #     # RED subtree
+    #     root = self.bst.root = self.bst._Node(5, 'a', color=True)
+        
+    #     root.left = self.bst._Node(3, 'b', color=False)
+    #     root.left.left = self.bst._Node(1, 'c', color=False)
+    #     root.right = self.bst._Node(7, 'd', color=False)
+        
+    #     self.assertTrue(self.bst._move_red_left(root))
+    #     self.assertFalse(self.bst._rotate_left(root))
+    #     self.assertTrue(self.bst._rotate_left(root))
     
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.root = bst._Node(5, 'a')
-    bst.root.right = bst._Node(7, 'b', color=True)
+    bst.root.right = bst._Node(7, 'b', color=False)
+    bst.root.left = bst._Node(3, 'c', color=True)
     
-    print(f"{bst.root = }")
-    print(f"{bst.root.left = }")
-    print(f"{bst.root.right = }")
+    bst.root.right.left = bst._Node(6, 'b', color=True)
+    bst.root.left.right = bst._Node(4, 'c', color=False)
     
-    print(bst.is_23tree)
+    bst.display(bst.root)

@@ -458,6 +458,11 @@ class RedBlackBST(BST):
         Display tree by rendering it with Graphviz.
         """
         dot = graphviz.Digraph()
+        if root is None:
+            dot.node("", shape="point")
+            dot.render('img/red_black_bst', view=True, format='png')
+            return
+        
         dot.node(str(root.key))
 
         def add_nodes_edges(node):
@@ -466,7 +471,7 @@ class RedBlackBST(BST):
             # LINK: Node or null
             if node.left:
                 left_node = str(node.left.key)
-                shape = "circle"
+                shape = "ellipse"
                 weight = "1"
             else:
                 left_node = "None" + str(random())
@@ -476,7 +481,7 @@ class RedBlackBST(BST):
             # EDGE: RED or BLACK
             if self.is_red(node.left):
                 color = "red"
-                penwidth = "3"
+                penwidth = "2"
             else:
                 color = "black"
                 penwidth = "1"
@@ -498,7 +503,7 @@ class RedBlackBST(BST):
             # LINK: Node or null
             if node.right:
                 right_node = str(node.right.key)
-                shape = "circle"
+                shape = "ellipse"
                 weight = "1"
             else:
                 right_node = "None" + str(random())
@@ -508,7 +513,7 @@ class RedBlackBST(BST):
             # EDGE: RED or BLACK
             if self.is_red(node.right):
                 color = "red"
-                penwidth = "3"
+                penwidth = "2"
             else:
                 color = "black"
                 penwidth = "1"
@@ -521,7 +526,6 @@ class RedBlackBST(BST):
                 penwidth=penwidth,
                 weight=weight,
                 )
-            
             # recursively add more nodes
             if node.right:
                 add_nodes_edges(node.right)
@@ -908,10 +912,24 @@ class TestsRedBlackBST(TestsBST):
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.root = bst._Node(5, 'a')
-    bst.root.right = bst._Node(7, 'b', color=False)
+    
     bst.root.left = bst._Node(3, 'c', color=True)
     
-    bst.root.right.left = bst._Node(6, 'b', color=True)
+    bst.root.left.left = bst._Node(2, 'c', color=True)
+    bst.root.left.left.right = bst._Node(2.1, 'c', color=True)
+    bst.root.left.left.left = bst._Node(1.9, 'c', color=True)
+    
     bst.root.left.right = bst._Node(4, 'c', color=False)
+    bst.root.left.right.right = bst._Node(4.1, 'c', color=False)
+    bst.root.left.right.left = bst._Node(3.9, 'c', color=False)
+    
+    bst.root.right = bst._Node(7, 'b', color=False)
+    bst.root.right.left = bst._Node(6, 'c', color=True)
+    bst.root.right.left.right = bst._Node(6.1, 'c', color=True)
+    bst.root.right.left.left = bst._Node(5.9, 'c', color=True)
+    
+    bst.root.right.right = bst._Node(8, 'c', color=False)
+    bst.root.right.right.right = bst._Node(8.1, 'c', color=False)
+    bst.root.right.right.left = bst._Node(7.9, 'c', color=False)
     
     bst.display(bst.root)

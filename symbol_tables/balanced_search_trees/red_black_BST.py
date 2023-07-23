@@ -1837,7 +1837,43 @@ class TestsRedBlackBST(unittest.TestCase):
         self.bst.put('f', 'fig')
         self.bst.put('g', 'guava')
         self.bst.display('img/test_display', view=self.view)
-        
+    
+    def test_move_red_left_empty_tree(self):
+        self.assertIsNone(self.bst._move_red_left(self.bst.root))
+    
+    def test_move_red_left_black_subtree(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.assertEqual(self.bst._move_red_left(self.bst.root), self.bst.root)
+    
+    def test_move_red_left_two_left_reds(self):
+        self.bst.put('d', 'daisy')
+        self.bst.put('c', 'cherry')
+        self.bst.put('b', 'banana')
+        self.bst.put('a', 'apple')
+        self.bst.root.color = True
+        self.bst.root.left.color = True
+        self.assertEqual(self.bst._move_red_left(self.bst.root), self.bst.root)
+    
+    def test_move_red_right_empty_tree(self):
+        self.assertIsNone(self.bst._move_red_right(self.bst.root))
+    
+    def test_move_red_right_black_subtree(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.assertEqual(self.bst._move_red_right(self.bst.root), self.bst.root)
+    
+    def test_move_red_right_two_left_reds(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.bst.put('d', 'daisy')
+        self.bst.root.color = True
+        self.bst.root.right.color = True
+        self.assertEqual(self.bst._move_red_right(self.bst.root), self.bst.root)
+    
 #   END OF TESTS
 # ------------------------------------------------   
 if __name__ == "__main__":

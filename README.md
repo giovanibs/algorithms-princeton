@@ -31,7 +31,7 @@ Contributions are welcome from the open-source community to enhance the reposito
 To get started, simply clone the repository to your local machine:
 
 <pre>
-git clone <repository_url>
+git clone https://github.com/giovanibs/algorithms-princeton.git
 </pre>
 
 Explore the different folders, each dedicated to specific data structures and algorithms, and dive into the well-commented Python code to deepen your understanding.

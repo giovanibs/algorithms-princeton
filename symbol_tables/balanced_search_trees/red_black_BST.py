@@ -888,7 +888,7 @@ class RedBlackBST:
         if hi > subtree.key:
             self._in_order(subtree.right, lo, hi, q)
 
-    def display(self):
+    def display(self, filename='img/red_black_bst', view=True):
         """
         Display tree by rendering it with Graphviz.
         """
@@ -896,7 +896,7 @@ class RedBlackBST:
         root = self.root
         if root is None:
             dot.node("", shape="point")
-            dot.render('img/red_black_bst', view=True, format='png')
+            dot.render(filename, view=view, format='png')
             return
         
         root_color = "red" if root.color else "black"
@@ -968,7 +968,7 @@ class RedBlackBST:
                 add_nodes_edges(node.right)
             
         add_nodes_edges(root)
-        dot.render('img/red_black_bst', view=True, format='png')
+        dot.render(filename, view=view, format='png')
     
 # ------------------------------------------------
 #   TESTS
@@ -979,6 +979,9 @@ from random import randint, choice
 class TestsRedBlackBST(unittest.TestCase):
     def setUp(self):
         self.bst = RedBlackBST()
+        
+        # for display testing: open the rendered image
+        self.view = False
         
     def test_is_BST_empty_tree(self):
         self.assertTrue(self.bst.is_BST)
@@ -1085,13 +1088,13 @@ class TestsRedBlackBST(unittest.TestCase):
         root.left.right = self.bst._Node(4, 'd', color=True)
         self.assertFalse(self.bst.is_23tree)
         
-    def test_is_23tree_two_red_link(self):
+    def test_is_23tree_4node(self):
         # node connected to two red links, aka 4-node
         root = self.bst.root = self.bst._Node(5, 'a', color=False)
         root.right = self.bst._Node(7, 'b', color=False)
         self.assertTrue(self.bst.is_23tree)
         root.right.left = self.bst._Node(6, 'b', color=True)
-        root.right.right = self.bst._Node(8, 'b', color=True)
+        root.right.left.left = self.bst._Node(8, 'b', color=True)
         self.assertFalse(self.bst.is_23tree)
     
     def test_is_23tree(self):
@@ -1562,19 +1565,282 @@ class TestsRedBlackBST(unittest.TestCase):
             self.assertFalse(self.bst.contains(random_key))
             self.assertTrue(self.bst.assert_integrity())
     
+    def test_Node_invalid_color(self):
+        with self.assertRaises(ValueError):
+            self.bst._Node('a', 'a', color = 'blue')
+    
+    def test_Node_repr(self):
+        node = self.bst._Node('a', 'apple', size = 3, color = False)
+        expected = "_Node(key=a, val=apple, size=3, color=BLACK)"
+        self.assertEqual(expected, node.__repr__())
+            
+    def test_Node_eq(self):
+        node1 = self.bst._Node('a', 'apple', size = 3, color = False)
+        node2 = self.bst._Node('a', 'apple', size = 3, color = False)
+        self.assertIsNot(node1, node2)
+        self.assertEqual(node1, node2)
+            
+    def test_Node_not_eq(self):
+        node1 = self.bst._Node('a', 'apple', size = 3, color = False)
+        node2 = self.bst._Node('a', 'apple', size = 4, color = False)
+        self.assertIsNot(node1, node2)
+        self.assertNotEqual(node1, node2)
+            
+    def test_Node_eq_type_error(self):
+        node1 = self.bst._Node('a', 'apple')
+        node2 = 'a'
+        self.assertIsNot(node1, node2)
+        with self.assertRaises(TypeError):
+            node1 == node2
+    
+    def test_min_empty_tree(self):
+        self.assertIsNone(self.bst.min())
+        
+    def test_min(self):
+        self.bst.put(5, "apple")
+        self.assertEqual(5, self.bst.min())
+        
+        self.bst.put(2, "banana")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(7, "cherry")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(6, "date")
+        self.assertEqual(2, self.bst.min())
+        
+        self.bst.put(1, "eggplant")
+        self.assertEqual(1, self.bst.min())
+        
+    def test_max_empty_tree(self):
+        self.assertIsNone(self.bst.max())
+        
+    def test_max(self):
+        self.bst.put(5, "apple")
+        self.assertEqual(5, self.bst.max())
+        
+        self.bst.put(2, "banana")
+        self.assertEqual(5, self.bst.max())
+        
+        self.bst.put(7, "cherry")
+        self.assertEqual(7, self.bst.max())
+        
+        self.bst.put(6, "date")
+        self.assertEqual(7, self.bst.max())
+        
+        self.bst.put(9, "eggplant")
+        self.assertEqual(9, self.bst.max())
+    
+    def test_floor_empty_tree(self):
+        self.assertIsNone(self.bst.floor(1))
+    
+    def test_floor(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+
+        # floor == root
+        self.assertEqual(self.bst.floor(50), 50)
+        self.assertEqual(self.bst.floor(70), 70)
+        self.assertEqual(self.bst.floor(30), 30)
+        self.assertEqual(self.bst.floor(10), 10)
+        self.assertEqual(self.bst.floor(80), 80)
+        self.assertEqual(self.bst.floor(40), 40)
+
+        # other
+        self.assertIsNone(self.bst.floor(1))
+        self.assertIsNone(self.bst.floor(5))
+        self.assertEqual(self.bst.floor(15), 10)
+        self.assertEqual(self.bst.floor(25), 10)
+        self.assertEqual(self.bst.floor(35), 30)
+        self.assertEqual(self.bst.floor(45), 40)
+        self.assertEqual(self.bst.floor(69), 50)
+        self.assertEqual(self.bst.floor(99), 80)
+        self.assertEqual(self.bst.floor(88), 80)
+        self.assertEqual(self.bst.floor(77), 70)
+    
+    def test_ceiling_empty_tree(self):
+        self.assertIsNone(self.bst.ceiling(1))
+    
+    def test_ceiling(self):
+        self.bst.put(50, 50)
+        self.bst.put(70, 70)
+        self.bst.put(30, 20)
+        self.bst.put(10, 10)
+        self.bst.put(80, 80)
+        self.bst.put(40, 40)
+
+        # ceiling == root
+        self.assertEqual(self.bst.ceiling(50), 50)
+        self.assertEqual(self.bst.ceiling(70), 70)
+        self.assertEqual(self.bst.ceiling(30), 30)
+        self.assertEqual(self.bst.ceiling(10), 10)
+        self.assertEqual(self.bst.ceiling(80), 80)
+        self.assertEqual(self.bst.ceiling(40), 40)
+
+        # other
+        self.assertEqual(self.bst.ceiling(1), 10)
+        self.assertEqual(self.bst.ceiling(5), 10)
+        self.assertEqual(self.bst.ceiling(15), 30)
+        self.assertEqual(self.bst.ceiling(25), 30)
+        self.assertEqual(self.bst.ceiling(35), 40)
+        self.assertEqual(self.bst.ceiling(45), 50)
+        self.assertEqual(self.bst.ceiling(69), 70)
+        self.assertEqual(self.bst.ceiling(99), None)
+        self.assertEqual(self.bst.ceiling(88), None)
+        self.assertEqual(self.bst.ceiling(77), 80)
+
+    def test_select_empty_tree(self):
+        with self.assertRaises(ValueError):
+            self.bst.select(0)
+        
+    def test_select_out_of_range(self):
+        self.bst.put(5, "apple")
+        
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.bst.select(-1))
+        
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.bst.select(1))
+        
+    def test_select(self):
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(6, "date")
+        self.bst.put(3, "eggplant")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        #     (3) (6)
+        self.assertEqual(2, self.bst.select(0))
+        self.assertEqual(3, self.bst.select(1))
+        self.assertEqual(5, self.bst.select(2))
+        self.assertEqual(6, self.bst.select(3))
+        self.assertEqual(7, self.bst.select(4))
+    
+    def test_rank_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.rank(1)
+        
+    def test_rank_key_not_in_BST(self):
+        self.bst.put(5, "apple")
+        
+        with self.assertRaises(KeyError):
+            self.bst.rank(2)
+        
+    def test_rank(self):
+        self.bst.put(5, "apple")
+        self.bst.put(2, "banana")
+        self.bst.put(7, "cherry")
+        self.bst.put(6, "date")
+        self.bst.put(3, "eggplant")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        #     (3) (6)
+        self.assertEqual(0, self.bst.rank(2))
+        self.assertEqual(1, self.bst.rank(3))
+        self.assertEqual(2, self.bst.rank(5))
+        self.assertEqual(3, self.bst.rank(6))
+        self.assertEqual(4, self.bst.rank(7))
+    
+    def test_keys_empty_tree(self):
+        self.assertEqual([], self.bst.keys())
+    
+    def test_all_keys(self):
+        bst = self.bst # for convenience
+        
+        bst.put(5, "apple")
+        self.assertEqual([5], self.bst.keys())
+        
+        bst.put(2, "banana")
+        self.assertEqual([2, 5], self.bst.keys())
+        
+        bst.put(7, "cherry")
+        self.assertEqual([2, 5, 7], self.bst.keys())
+        
+        bst.put(6, "date")
+        bst.put(1, "eggplant")
+        bst.put(8, "fig")
+        self.assertEqual([1, 2, 5, 6, 7, 8], self.bst.keys())
+    
+    def test_keys_in_range(self):
+        bst = self.bst # for convenience
+        
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(6, "date")
+        bst.put(1, "eggplant")
+        bst.put(8, "fig")
+        #      (5)
+        #     /   \
+        #   (2)    (7)
+        #   / \    / \
+        # (1)    (6) (8)
+        
+        result = bst.keys(1, 1)
+        expected = [1]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(7, 7)
+        expected = [7]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(1, 2)
+        expected = [1, 2]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(7, 10)
+        expected = [7, 8]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(1, 5)
+        expected = [1, 2, 5]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(2, 7)
+        expected = [2, 5, 6, 7]
+        self.assertEqual(expected, result)
+        
+        result = bst.keys(0, 10)
+        expected = [1, 2, 5, 6, 7, 8]
+        self.assertEqual(expected, result)
+    
+    def test_display_empty(self):
+        self.bst.display('img/test_empty_bst', view=self.view)
+    
+    def test_display_left_red(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.display('img/test_left_red', view=self.view)
+    
+    def test_display_right_red(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.root.right = self.bst.root.left
+        self.bst.root.left = None
+        self.bst.display('img/test_right_red', view=self.view)
+    
+    def test_display(self):
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.bst.put('d', 'daisy')
+        self.bst.put('e', 'eggplant')
+        self.bst.put('f', 'fig')
+        self.bst.put('g', 'guava')
+        self.bst.display('img/test_display', view=self.view)
+        
 #   END OF TESTS
 # ------------------------------------------------   
-
-from time import sleep
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.put('a', 'apple')
-    bst.put('b', 'banana')
-    bst.put('c', 'cherry')
-    bst.put('d', 'daisy')
-    bst.put('e', 'eggplant')
-    bst.put('f', 'fig')
-    bst.put('g', 'guava')
-    # bst.del_key('b')
-    bst.display()
-    # bst.del_key('b')
+    print(bst.root)

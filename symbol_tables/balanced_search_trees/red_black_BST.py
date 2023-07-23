@@ -70,6 +70,7 @@ class RedBlackBST(BST):
     NOT_23TREE = "Not a 2-3 tree"
     NOT_BALANCED = "Not balanced"
     NOT_SIZE_CONSISTENT = "Subtree counts not consistent"
+    RED_ROOT = "BST's root cannot be RED"
 
     def __init__(self):
         super().__init__()
@@ -271,10 +272,11 @@ class RedBlackBST(BST):
         - balanced tree
         - subtree size consistency
         """
-        assert self.is_BST,             RedBlackBST.NOT_BST
-        assert self.is_23tree,          RedBlackBST.NOT_23TREE
-        assert self.is_balanced,        RedBlackBST.NOT_BALANCED
-        assert self.is_size_consistent, RedBlackBST.NOT_SIZE_CONSISTENT
+        assert self.is_BST,                 RedBlackBST.NOT_BST
+        assert self.is_23tree,              RedBlackBST.NOT_23TREE
+        assert self.is_balanced,            RedBlackBST.NOT_BALANCED
+        assert self.is_size_consistent,     RedBlackBST.NOT_SIZE_CONSISTENT
+        assert not self.is_red(self.root),  RedBlackBST.RED_ROOT
         
         return True
         
@@ -501,13 +503,92 @@ class RedBlackBST(BST):
         return self.restore_balance(subtree)
 
     def del_key(self, k):
-        return super().del_key(k)
-        # raise NotImplementedError
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        if not self.contains(k):
+            raise KeyError(f"Given key `{k}` not in BST.")
+        
+        # if both children of root are black, set root to red
+        if not self.is_red(self.root.left) and not self.is_red(self.root.right):
+            self.root.color = RedBlackBST.RED
+        
+        self.root = self._del_key(k, self.root)
+        
+        if not self.is_empty:
+            # restore root BACK to BLACK
+            self.root.color = RedBlackBST.BLACK
 
     def _del_key(self, k, subtree):
-        return super()._del_key(k, subtree)
-        # raise NotImplementedError
+        """
+        Recursive function to delete a key from the red-black tree.
 
+        Args:
+            key: The key to be deleted.
+            subtree: The current subtree being processed.
+
+        Returns:
+            The updated subtree after deletion.
+        """
+        
+        ########################
+        ### DELETE FROM LEFT ###
+        ########################
+        if k < subtree.key:
+            
+            # Check if the left child is a 2-node
+            # (black node with two black children).
+            if not self.is_red(subtree.left) and \
+                    not self.is_red(subtree.left.left):
+                
+                # Convert the 2-node into a 3-node or 4-node
+                # by borrowing from the right sibling.
+                subtree = self._move_red_left(subtree)
+            
+            # Continue the search in the left subtree.
+            subtree.left = self._del_key(k, subtree.left)
+            
+            # Rebalance the tree after deletion
+            return self.restore_balance(subtree)
+        
+        #########################
+        ### DELETE FROM RIGHT ###
+        #########################
+        
+        # If the left child is red, do a right rotation
+        # to make it easier to delete the key.
+        if self.is_red(subtree.left):
+            subtree = self._rotate_right(subtree)
+        
+        # If the key matches the current node's key and the
+        # right child is None, it means we found the node
+        # to be deleted. Return None to remove it.
+        if k == subtree.key and subtree.right is None:
+            return None
+        
+        # Check if the right child is a 2-node
+        # (black node with two black children).
+        if not self.is_red(subtree.right) and not self.is_red(subtree.right.left):
+            
+            # Convert the 2-node into a 3-node or 4-node
+            # by borrowing from the left sibling.
+            subtree = self._move_red_right(subtree)
+        
+        # If the key matches the current node's key, replace
+        # it with the minimum key from the right subtree.
+        if k == subtree.key:
+            aux = self._min(subtree.right)
+            subtree.key = aux.key
+            subtree.val = aux.val
+            subtree.right = self._del_min(subtree.right)
+            
+        # Continue the search in the right subtree.
+        else:
+            subtree.right = self._del_key(k, subtree.right)
+        
+        # Rebalance the tree after deletion.
+        return self.restore_balance(subtree)
+        
     # ------------------------------------------------
     #   Not overridden BST methods/properties
     # ------------------------------------------------
@@ -667,7 +748,7 @@ except:
     package_path = os.path.abspath("../")
     sys.path.append(package_path)
     from binary_search_trees.bst2 import TestsBST
-from random import randint
+from random import randint, choice
 
 class TestsRedBlackBST(TestsBST):
     def setUp(self):
@@ -896,6 +977,13 @@ class TestsRedBlackBST(TestsBST):
 
         with self.assertRaisesRegex(AssertionError,
                                     RedBlackBST.NOT_SIZE_CONSISTENT):
+            self.bst.assert_integrity()
+            
+    def test_assert_integrity_RED_ROOT(self):
+        self.bst.root = self.bst._Node(3, 'a', color=True)
+
+        with self.assertRaisesRegex(AssertionError,
+                                    RedBlackBST.RED_ROOT):
             self.bst.assert_integrity()
             
     def test_rotate_left(self):
@@ -1163,6 +1251,91 @@ class TestsRedBlackBST(TestsBST):
         self.assertEqual(bst.size(), expected_tree_size)
         self.assertTrue(bst.assert_integrity())
 
+    def test_del_key_empty_BST(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_key(1)
+    
+    def test_del_key_not_in_BST(self):
+        self.bst.put2('a', 'apple')
+        
+        with self.assertRaises(KeyError):
+            self.bst.del_key('b')
+
+    def test_del_key_root(self):
+        self.bst.put2('a', 'apple')
+        self.bst.del_key('a')
+        self.assertTrue(self.bst.is_empty)
+    
+    def test_del_key_left_with_no_child(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('c', 'cherry')
+        self.bst.del_key('a')
+        self.assertFalse(self.bst.contains('a'))
+        self.assertTrue(self.bst.assert_integrity())
+
+    def test_del_key_left_with_left_child(self):
+        self.bst.put2('d', 'daisy')
+        self.bst.put2('c', 'cherry')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('a', 'apple')
+        self.bst.del_key('b')
+        self.assertFalse(self.bst.contains('b'))
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_key_left_with_both_children(self):
+        self.bst.put2('e', 'eggplant')
+        self.bst.put2('d', 'daisy')
+        self.bst.put2('c', 'cherry')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('a', 'apple')
+        self.bst.del_key('b')
+        self.assertFalse(self.bst.contains('b'))
+        self.assertTrue(self.bst.assert_integrity())
+        
+    def test_del_key_right_with_no_child(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('c', 'cherry')
+        self.bst.del_key('c')
+        self.assertFalse(self.bst.contains('c'))
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_key_right_with_left_child(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('c', 'cherry')
+        self.bst.put2('d', 'daisy')
+        self.bst.del_key('d')
+        self.assertFalse(self.bst.contains('d'))
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_key_right_with_both_children(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.put2('c', 'cherry')
+        self.bst.put2('d', 'daisy')
+        self.bst.put2('e', 'eggplant')
+        self.bst.put2('f', 'fig')
+        self.bst.put2('g', 'guava')
+        self.bst.del_key('d')
+        self.assertFalse(self.bst.contains('d'))
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_key(self):
+        # random keys
+        keys = {randint(0, 1_000) for _ in range(100)}
+        for key in keys:
+            self.bst.put2(key, str(key))
+        
+        keys = list(keys)
+        while keys:
+            random_key = choice(keys)   # choose random key from keys
+            keys.remove(random_key)
+            self.bst.del_key(random_key)
+            self.assertFalse(self.bst.contains(random_key))
+            self.assertTrue(self.bst.assert_integrity())
+    
 #   END OF TESTS
 # ------------------------------------------------   
 
@@ -1170,8 +1343,12 @@ from time import sleep
 if __name__ == "__main__":
     bst = RedBlackBST()
     bst.put2('a', 'apple')
-    # bst.display()
-    # sleep(2)
-    bst.del_min()
-    print(f"{bst.is_empty = }")
+    bst.put2('b', 'banana')
+    bst.put2('c', 'cherry')
+    bst.put2('d', 'daisy')
+    bst.put2('e', 'eggplant')
+    bst.put2('f', 'fig')
+    bst.put2('g', 'guava')
+    # bst.del_key('b')
     bst.display()
+    # bst.del_key('b')

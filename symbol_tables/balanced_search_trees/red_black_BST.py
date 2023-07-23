@@ -478,6 +478,9 @@ class RedBlackBST(BST):
     def is_empty(self):
         return super().is_empty
 
+    def contains(self, k):
+        return super().contains(k)
+    
     def size(self):
         return super().size()
 
@@ -627,6 +630,7 @@ except:
     package_path = os.path.abspath("../")
     sys.path.append(package_path)
     from binary_search_trees.bst2 import TestsBST
+from random import randint
 
 class TestsRedBlackBST(TestsBST):
     def setUp(self):
@@ -1012,22 +1016,72 @@ class TestsRedBlackBST(TestsBST):
         bst.put2(7, "cherry")
         bst.put2(4, "date")
         bst.assert_integrity()
+    
+    def test_del_min_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_min()
+            
+    def test_del_min_single_node(self):
+        self.bst.put2('a', 'apple')
+        self.bst.del_min()
+        self.assertTrue(self.bst.is_empty)
+    
+    def test_del_min_single_child(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.del_min()
+        self.assertFalse(self.bst.contains('a'))
+        self.assertEqual(self.bst.root.key, 'b')
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_min_two_children(self):
+        bst = self.bst
+        bst.put2('a', 'apple')
+        bst.put2('b', 'banana')
+        bst.put2('c', 'cherry')
+        bst.del_min()
+        self.assertFalse(bst.contains('a'))
+        self.assertEqual(bst.root.key, 'c')
+        self.assertTrue(bst.is_red(bst.root.left))
+        self.assertTrue(bst.assert_integrity())
+    
+    def test_del_min_deeper_node(self):
+        bst = self.bst
+        bst.put2('d', 'daisy')
+        bst.put2('c', 'cherry')
+        bst.put2('b', 'banana')
+        bst.put2('a', 'apple')
+        bst.del_min()
+        self.assertFalse(bst.contains('a'))
+        self.assertTrue(bst.contains('b'))
+        self.assertTrue(bst.contains('d'))
+        self.assertEqual(bst.root.key, 'c')
+        self.assertTrue(bst.assert_integrity())
+    
+    def test_del_min(self):
+        bst = self.bst
         
+        # random keys
+        keys = {randint(0, 1_000) for _ in range(100)}
+        for key in keys:
+            bst.put2(key, str(key))
+        
+        min_key = min(keys)
+        bst.del_min()
+        expected_tree_size = len(keys) - 1
+        self.assertFalse(bst.contains(min_key))
+        self.assertEqual(bst.size(), expected_tree_size)
+        self.assertTrue(bst.assert_integrity())
+    
+#   END OF TESTS
+# ------------------------------------------------   
+
 from time import sleep
 if __name__ == "__main__":
     bst = RedBlackBST()
-    bst.put2(5, "apple")
-    bst.put2(2, "banana")
-    bst.put2(4, "date")
-    bst.put2(3, "hibiscus")
-    bst.put2(1, "fig")
-    bst.put2(8, "cherry")
-    bst.put2(6, "eggplant")
-    bst.put2(7, "guava")
+    bst.put2('a', 'apple')
+    # bst.display()
+    # sleep(2)
+    bst.del_min()
+    print(f"{bst.is_empty = }")
     bst.display()
-    sleep(3)
-    bst.root.color = True
-    bst._move_red_left(bst.root)
-    bst.display()
-    # bst.assert_integrity()
-    # bst.del_min()

@@ -224,7 +224,23 @@ class RedBlackBST(BST):
         and `subtree.right.left` are black, make `subtree.right`
         or one of its children red.
         """
-        raise NotImplementedError
+        if subtree is None:
+            return subtree
+        
+        if not self.is_red(subtree):
+            return subtree
+        
+        if self.is_red(subtree.right) \
+                and self.is_red(subtree.right.left):
+            return subtree
+        
+        self._flip_colors(subtree)
+        
+        if self.is_red(subtree.left.left):
+            subtree = self._rotate_right(subtree)
+            self._flip_colors(subtree)
+        
+        return subtree
 
     def restore_balance(self, subtree):
         # right-leaning red link
@@ -456,12 +472,33 @@ class RedBlackBST(BST):
         return self.restore_balance(subtree)
     
     def del_max(self):
-        return super().del_max()
-        # raise NotImplementedError
+        if self.is_empty:
+            raise KeyError("BST is empty.")
+        
+        # if both children of root are black, set root to red
+        if not self.is_red(self.root.left) and not self.is_red(self.root.right):
+            self.root.color = RedBlackBST.RED
+
+        self.root = self._del_max(self.root)
+        
+        if not self.is_empty:
+            # restore root BACK to BLACK
+            self.root.color = RedBlackBST.BLACK
 
     def _del_max(self, subtree):
-        return super()._del_max(subtree)
-        # raise NotImplementedError
+        if self.is_red(subtree.left):
+            subtree = self._rotate_right(subtree)
+            
+        if subtree.right is None:
+            return None
+        
+        if not self.is_red(subtree.right) and \
+                not self.is_red(subtree.right.left):
+            subtree = self._move_red_right(subtree)
+            
+        subtree.right = self._del_max(subtree.right)
+        
+        return self.restore_balance(subtree)
 
     def del_key(self, k):
         return super().del_key(k)
@@ -1073,6 +1110,59 @@ class TestsRedBlackBST(TestsBST):
         self.assertEqual(bst.size(), expected_tree_size)
         self.assertTrue(bst.assert_integrity())
     
+    def test_del_max_empty_tree(self):
+        with self.assertRaises(KeyError):
+            self.bst.del_max()
+            
+    def test_del_max_single_node(self):
+        self.bst.put2('a', 'apple')
+        self.bst.del_max()
+        self.assertTrue(self.bst.is_empty)
+    
+    def test_del_max_single_child(self):
+        self.bst.put2('a', 'apple')
+        self.bst.put2('b', 'banana')
+        self.bst.del_max()
+        self.assertFalse(self.bst.contains('b'))
+        self.assertEqual(self.bst.root.key, 'a')
+        self.assertTrue(self.bst.assert_integrity())
+    
+    def test_del_max_root_with_two_children(self):
+        bst = self.bst
+        bst.put2('a', 'apple')
+        bst.put2('b', 'banana')
+        bst.put2('c', 'cherry')
+        bst.del_max()
+        self.assertFalse(bst.contains('c'))
+        self.assertEqual(bst.root.key, 'b')
+        self.assertTrue(bst.assert_integrity())
+    
+    def test_del_max_deeper_with_left_child(self):
+        bst = self.bst
+        bst.put2('a', 'apple')
+        bst.put2('b', 'banana')
+        bst.put2('c', 'cherry')
+        bst.put2('d', 'daisy')
+        bst.del_max()
+        self.assertFalse(bst.contains('d'))
+        self.assertEqual(bst.root.key, 'b')
+        self.assertTrue(bst.assert_integrity())
+    
+    def test_del_max(self):
+        bst = self.bst
+        
+        # random keys
+        keys = {randint(0, 1_000) for _ in range(100)}
+        for key in keys:
+            bst.put2(key, str(key))
+        
+        max_key = max(keys)
+        bst.del_max()
+        expected_tree_size = len(keys) - 1
+        self.assertFalse(bst.contains(max_key))
+        self.assertEqual(bst.size(), expected_tree_size)
+        self.assertTrue(bst.assert_integrity())
+
 #   END OF TESTS
 # ------------------------------------------------   
 

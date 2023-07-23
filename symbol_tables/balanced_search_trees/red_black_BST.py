@@ -1,16 +1,7 @@
-try:
-    from ..binary_search_trees.bst2 import BinarySearchTree as BST
-except:
-    import os
-    import sys
-
-    package_path = os.path.abspath("../")
-    sys.path.append(package_path)
-    from binary_search_trees.bst2 import BinarySearchTree as BST
 import graphviz
-from random import random
+from random import random # used with graphviz
 
-class RedBlackBST(BST):
+class RedBlackBST:
     """
     # Left-leaning red-black BST
 
@@ -73,7 +64,7 @@ class RedBlackBST(BST):
     RED_ROOT = "BST's root cannot be RED"
 
     def __init__(self):
-        super().__init__()
+        self.root = None
 
     class _Node:
         def __init__(self, key, val, size=1, color=None):
@@ -405,22 +396,11 @@ class RedBlackBST(BST):
     # ------------------------------------------------
     #   Overridden BST methods/properties.
     # ------------------------------------------------
-    
-    # ---------------------------------------
-    # keeping these here until implementation
-    # is finished bc of the inherited tests
     def put(self, k, v):
-        return super().put(k, v)
-
-    def _put(self, k, v, subtree):
-        return super()._put(k, v, subtree)
-    # ---------------------------------------
-    
-    def put2(self, k, v):
-        self.root = self._put2(k, v, self.root)
+        self.root = self._put(k, v, self.root)
         self.root.color = RedBlackBST.BLACK
 
-    def _put2(self, k, v, subtree):
+    def _put(self, k, v, subtree):
         # -------------------------------------------------
         # (1) puts new node just like a normal BST
         if subtree is None:
@@ -430,10 +410,10 @@ class RedBlackBST(BST):
             subtree.val = v
         
         elif k < subtree.key:
-            subtree.left = self._put2(k, v, subtree.left)
+            subtree.left = self._put(k, v, subtree.left)
         
         else: # k > subtree.key
-            subtree.right = self._put2(k, v, subtree.right)
+            subtree.right = self._put(k, v, subtree.right)
         
         # -------------------------------------------------
         # (2) fix-up color links if necessary
@@ -594,64 +574,319 @@ class RedBlackBST(BST):
     # ------------------------------------------------
     @property
     def is_empty(self):
-        return super().is_empty
-
-    def contains(self, k):
-        return super().contains(k)
+        return self.root is None
     
+    def contains(self, k):
+        """
+        Does this BST contain the given key?
+        """
+        return self.get(k) is not None
+        
     def size(self):
-        return super().size()
-
+        """
+        Returns the size of the BST.
+        """
+        return self._size(self.root)
+            
     def _size(self, subtree):
-        return super()._size(subtree)
-
+        """
+        Returns the size of the BST rooted at `subtree`.
+        """
+        if subtree is None:
+            return 0
+        else:
+            return subtree.size
+ 
     def get(self, k):
-        return super().get(k)
-
+        if self.is_empty:
+            return None
+        
+        return self._get(k, self.root)
+    
     def _get(self, k, subtree):
-        return super()._get(k, subtree)
-
+        """
+        A recursive algorithm to search for a key in a BST and return
+        its value `val`.
+        
+        For a given key, `k`, and a given root of a subtree, `subtree`:
+        
+        1) If the subtree is empty, we have a search miss.
+        
+        2) If not, starting from the `subtree`, we compare `k`
+        with the `subtree`'s key: 
+            
+            - If `k == subtree.key`, we have a search hit;
+            
+            - Otherwise, we search (recursively) in the appropriate
+            subtree until `k` is found or we hit an empty subtree:
+                
+                - `k < subtree.key`: search in the left subtree
+                
+                - `k > subtree.key`: search in the right subtree
+        """
+        if subtree is None:
+            return None
+        
+        if k == subtree.key:
+            return subtree.val
+        
+        if k < subtree.key:
+            return self._get(k, subtree.left)
+        
+        if k > subtree.key:
+            return self._get(k, subtree.right)
+    
     def min(self):
-        return super().min()
-
+        """
+        Returns the smallest key in the BST.
+        """
+        smallest = self._min(self.root)
+        if smallest is None:
+            return None
+        else:
+            return smallest.key 
+        
     def _min(self, subtree):
-        return super()._min(subtree)
-
+        """
+        If the subtree is None, then there is no smallest key.
+        
+        If the left link of the subtree is null, the smallest
+        key in this subtree is the key at the subtree root;
+        
+        Otherwise, the smallest key in the subtree is the
+        smallest key in the subtree rooted at the left link.
+        """
+        if subtree is None:
+            return None
+        
+        if subtree.left is None:
+            return subtree
+        else:
+            return self._min(subtree.left)
+        
     def max(self):
-        return super().max()
-
+        """
+        Returns the LARGEST key in the BST.
+        """
+        return self._max(self.root)
+        
     def _max(self, subtree):
-        return super()._max(subtree)
+        """
+        If the subtree is None, then there is no largest key.
+        
+        If the right link of the subtree is null, the largest
+        key in this subtree is the key at the subtree root;
+        
+        Otherwise, the largest key in the subtree is the
+        largest key in the subtree rooted at the right link.
+        """
+        if subtree is None:
+            return None
+        
+        if subtree.right is None:
+            return subtree.key
+        else:
+            return self._max(subtree.right)
 
     def floor(self, k):
-        return super().floor(k)
-
+        """
+        Returns the LARGEST key in the BST that is equal to or
+        smaller than the given key.
+        """
+        return self._floor(k, self.root)
+        
     def _floor(self, k, subtree):
-        return super()._floor(k, subtree)
-
+        """
+        Compare `k` with key of the root of the `subtree`:
+        
+        (a) If subtree is empty, return None.
+        
+        (b) If `k == subtree.key`, then `k` is the floor.
+        
+        (c) If `k < subtree.key`, then the floor of key **MUST**
+        be in the left subtree.
+        
+        (d) If `k > subtree.key`, then the floor of key **COULD**
+        be in the right subtree. That is, is there a key smaller
+        than or equal to `k` in the right subtree?
+            - if yes, recursively find and return it;
+            - if not, or if `k` is equal to the key at the root,
+            then `subtree.key` is the floor of `k`.
+        """
+        # (a)
+        if (subtree is None) or (k < self._min(subtree).key):
+            return None
+        
+        # (b)
+        if k == subtree.key:
+            return subtree.key
+        
+        # (c) MUST be in the left subtree
+        if k < subtree.key:
+            return self._floor(k, subtree.left)
+        
+        # (d) COULD be in the right subtree
+        if k > subtree.key:
+            floor = self._floor(k, subtree.right)
+            
+            # if not
+            if floor is None:
+                return subtree.key
+            else:
+                return floor
+    
     def ceiling(self, k):
-        return super().ceiling(k)
-
+        """
+        Returns the SMALLEST key in the BST that is greater than
+        or equal to the given key `k`.
+        """
+        return self._ceiling(k, self.root)
+        
     def _ceiling(self, k, subtree):
-        return super()._ceiling(k, subtree)
+        """
+        Compare `k` with key of the root of the `subtree`:
+        
+        (a) If subtree is empty, return None.
+        
+        (b) If `k == subtree.key`, then `k` is the ceiling.
+        
+        (c) If `k > subtree.key`, then the ceiling of `k` **MUST**
+        be in the right subtree: recursively look for it.
+        
+        (d) If `k < subtree.key`, then the ceiling of key **COULD**
+        be in the left subtree. That is, is there a key larger
+        than or equal to `k` in the left subtree?
+            - if yes, recursively find and return it;
+            - if not, or if `k` is equal to the key at the root,
+            then `subtree.key` is the ceiling of `k`.
+        """
+        # (a)
+        if (subtree is None) or (k > self._max(subtree)):
+            return None
+        
+        # (b)
+        if k == subtree.key:
+            return subtree.key
+        
+        # (c) MUST be in the right subtree. Find and return it.
+        if k > subtree.key:
+            return self._ceiling(k, subtree.right)
+        
+        # (d) COULD be in the left subtree
+        if k < subtree.key:
+            ceiling = self._ceiling(k, subtree.left)
+            
+            # if it is not in the left subtree
+            if ceiling is None:
+                return subtree.key
+            else:
+                return ceiling
 
     def select(self, r):
-        return super().select(r)
-
+        """
+        Returns the key of rank `r`, i.e. the key such that
+        precisely `r` other keys in the BST are smaller.
+        
+        0 <= r < size(BST)
+        """
+        if r < 0 or r >= self.size():
+            raise ValueError
+        
+        return self._select(r, self.root)
+    
     def _select(self, r, subtree):
-        return super()._select(r, subtree)
+        """
+        For the given rank `r` (0<= r < subtree size) and a
+        subtree root `subtree`:
+        
+        (a) If `r == size(subtree.left)`, we return the key
+        at the subtree root;
+        
+        (b) If `r < size(subtree.left)`, we look (recursively)
+        for the key of rank `r` in the left subtree;
+        
+        (c) If `r > size(subtree.left)`, we look (recursively)
+        for the key of rank (r - size(subtree.left) - 1)
+        in the right subtree.
+        """
+        left_size = self._size(subtree.left)
+        # (a)
+        if r == left_size:
+            return subtree.key
+        # (b)
+        elif r < left_size:
+            return self._select(r, subtree.left)
+        # (c)
+        else: # r > left_size:
+            new_r = r - left_size - 1
+            return self._select(new_r, subtree.right)
 
     def rank(self, k):
-        return super().rank(k)
-
+        """
+        Returns the rank (0 <= rank < BST size) of the given key `k`.
+        In other words, the number of keys in the symbol table
+        strictly less than `k`.
+        """
+        if not self.contains(k):
+            raise KeyError(f"`{k}` not in the BST!")
+        
+        return self._rank(k, self.root)
+        
     def _rank(self, k, subtree):
-        return super()._rank(k, subtree)
+        """
+        If `k == subtree.key`, we return the number of keys in the
+        left subtree;
+        
+        if `k < subtree.key`, we recursively look for the rank of
+        the key in the left subtree;
+        
+        if `k > subtree.key`, we return the sum of:
+            + `1` (to count the key at the root)
+            + left subtree size
+            + (recursively) the rank of the key in the right subtree.
+        """
+        if k == subtree.key:
+            return self._size(subtree.left)
+        
+        elif k < subtree.key:
+            return self._rank(k, subtree.left)
+        
+        else:   # k > subtree.key
+            return 1 + self._size(subtree.left) + self._rank(k, subtree.right)
 
     def keys(self, lo=None, hi=None):
-        return super().keys(lo, hi)
-
+        """
+        Returns all keys in the BST between `lo` (inclusive) and
+        `hi` (also inclusive) in ascending order.
+        """
+        if lo is None:
+            lo = self.min()
+        if hi is None:
+            hi = self.max()
+            
+        q = [] # queue
+            
+        self._in_order(self.root, lo, hi, q)
+        
+        return q
+    
     def _in_order(self, subtree, lo, hi, q):
-        return super()._in_order(subtree, lo, hi, q)
+        """
+        Traverse left subtree.
+        Enqueue key.
+        Traverse right subtree.
+        """
+        if subtree is None:
+            return
+        
+        if lo < subtree.key:
+            self._in_order(subtree.left, lo, hi, q)
+            
+        if subtree.key >= lo and subtree.key <= hi:
+            q.append(subtree.key)
+        
+        if hi > subtree.key:
+            self._in_order(subtree.right, lo, hi, q)
 
     def display(self):
         """
@@ -739,18 +974,9 @@ class RedBlackBST(BST):
 #   TESTS
 # ------------------------------------------------
 import unittest
-try:
-    from ..binary_search_trees.bst2 import TestsBST
-except:
-    import os
-    import sys
-
-    package_path = os.path.abspath("../")
-    sys.path.append(package_path)
-    from binary_search_trees.bst2 import TestsBST
 from random import randint, choice
 
-class TestsRedBlackBST(TestsBST):
+class TestsRedBlackBST(unittest.TestCase):
     def setUp(self):
         self.bst = RedBlackBST()
         
@@ -1106,40 +1332,40 @@ class TestsRedBlackBST(TestsBST):
         
     def test_put_empty_tree(self):
         bst = self.bst
-        bst.put2(5, 5)
+        bst.put(5, 5)
         self.assertEqual(bst.root.key, 5)
         
     def test_put_existing_key(self):
         bst = self.bst
-        bst.put2(5, 5)
-        bst.put2(5, 10)
+        bst.put(5, 5)
+        bst.put(5, 10)
         self.assertEqual(bst.root.key, 5)
         self.assertEqual(bst.root.val, 10)
         
     def test_put_left(self):
         bst = self.bst
-        bst.put2(5, 5)
-        bst.put2(3, 3)
+        bst.put(5, 5)
+        bst.put(3, 3)
         bst.assert_integrity()
         expected_node = bst._Node(3, 3, color=True, size=1)
         self.assertEqual(expected_node, bst.root.left)
         
     def test_put_right(self):
         bst = self.bst
-        bst.put2(5, 5)
-        bst.put2(7, 7)
+        bst.put(5, 5)
+        bst.put(7, 7)
         bst.assert_integrity()
         expected_root = bst._Node(7, 7, color=False, size=2)
         expected_left = bst._Node(5, 5, color=True, size=1)
         self.assertEqual(expected_root, bst.root)
         self.assertEqual(expected_left, bst.root.left)
         
-    def test_put2(self):
+    def test_put(self):
         bst = self.bst
-        bst.put2(5, "apple")
-        bst.put2(2, "banana")
-        bst.put2(7, "cherry")
-        bst.put2(4, "date")
+        bst.put(5, "apple")
+        bst.put(2, "banana")
+        bst.put(7, "cherry")
+        bst.put(4, "date")
         bst.assert_integrity()
     
     def test_del_min_empty_tree(self):
@@ -1147,13 +1373,13 @@ class TestsRedBlackBST(TestsBST):
             self.bst.del_min()
             
     def test_del_min_single_node(self):
-        self.bst.put2('a', 'apple')
+        self.bst.put('a', 'apple')
         self.bst.del_min()
         self.assertTrue(self.bst.is_empty)
     
     def test_del_min_single_child(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
         self.bst.del_min()
         self.assertFalse(self.bst.contains('a'))
         self.assertEqual(self.bst.root.key, 'b')
@@ -1161,9 +1387,9 @@ class TestsRedBlackBST(TestsBST):
     
     def test_del_min_two_children(self):
         bst = self.bst
-        bst.put2('a', 'apple')
-        bst.put2('b', 'banana')
-        bst.put2('c', 'cherry')
+        bst.put('a', 'apple')
+        bst.put('b', 'banana')
+        bst.put('c', 'cherry')
         bst.del_min()
         self.assertFalse(bst.contains('a'))
         self.assertEqual(bst.root.key, 'c')
@@ -1172,10 +1398,10 @@ class TestsRedBlackBST(TestsBST):
     
     def test_del_min_deeper_node(self):
         bst = self.bst
-        bst.put2('d', 'daisy')
-        bst.put2('c', 'cherry')
-        bst.put2('b', 'banana')
-        bst.put2('a', 'apple')
+        bst.put('d', 'daisy')
+        bst.put('c', 'cherry')
+        bst.put('b', 'banana')
+        bst.put('a', 'apple')
         bst.del_min()
         self.assertFalse(bst.contains('a'))
         self.assertTrue(bst.contains('b'))
@@ -1189,7 +1415,7 @@ class TestsRedBlackBST(TestsBST):
         # random keys
         keys = {randint(0, 1_000) for _ in range(100)}
         for key in keys:
-            bst.put2(key, str(key))
+            bst.put(key, str(key))
         
         min_key = min(keys)
         bst.del_min()
@@ -1203,13 +1429,13 @@ class TestsRedBlackBST(TestsBST):
             self.bst.del_max()
             
     def test_del_max_single_node(self):
-        self.bst.put2('a', 'apple')
+        self.bst.put('a', 'apple')
         self.bst.del_max()
         self.assertTrue(self.bst.is_empty)
     
     def test_del_max_single_child(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
         self.bst.del_max()
         self.assertFalse(self.bst.contains('b'))
         self.assertEqual(self.bst.root.key, 'a')
@@ -1217,9 +1443,9 @@ class TestsRedBlackBST(TestsBST):
     
     def test_del_max_root_with_two_children(self):
         bst = self.bst
-        bst.put2('a', 'apple')
-        bst.put2('b', 'banana')
-        bst.put2('c', 'cherry')
+        bst.put('a', 'apple')
+        bst.put('b', 'banana')
+        bst.put('c', 'cherry')
         bst.del_max()
         self.assertFalse(bst.contains('c'))
         self.assertEqual(bst.root.key, 'b')
@@ -1227,10 +1453,10 @@ class TestsRedBlackBST(TestsBST):
     
     def test_del_max_deeper_with_left_child(self):
         bst = self.bst
-        bst.put2('a', 'apple')
-        bst.put2('b', 'banana')
-        bst.put2('c', 'cherry')
-        bst.put2('d', 'daisy')
+        bst.put('a', 'apple')
+        bst.put('b', 'banana')
+        bst.put('c', 'cherry')
+        bst.put('d', 'daisy')
         bst.del_max()
         self.assertFalse(bst.contains('d'))
         self.assertEqual(bst.root.key, 'b')
@@ -1242,7 +1468,7 @@ class TestsRedBlackBST(TestsBST):
         # random keys
         keys = {randint(0, 1_000) for _ in range(100)}
         for key in keys:
-            bst.put2(key, str(key))
+            bst.put(key, str(key))
         
         max_key = max(keys)
         bst.del_max()
@@ -1256,68 +1482,68 @@ class TestsRedBlackBST(TestsBST):
             self.bst.del_key(1)
     
     def test_del_key_not_in_BST(self):
-        self.bst.put2('a', 'apple')
+        self.bst.put('a', 'apple')
         
         with self.assertRaises(KeyError):
             self.bst.del_key('b')
 
     def test_del_key_root(self):
-        self.bst.put2('a', 'apple')
+        self.bst.put('a', 'apple')
         self.bst.del_key('a')
         self.assertTrue(self.bst.is_empty)
     
     def test_del_key_left_with_no_child(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('c', 'cherry')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
         self.bst.del_key('a')
         self.assertFalse(self.bst.contains('a'))
         self.assertTrue(self.bst.assert_integrity())
 
     def test_del_key_left_with_left_child(self):
-        self.bst.put2('d', 'daisy')
-        self.bst.put2('c', 'cherry')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('a', 'apple')
+        self.bst.put('d', 'daisy')
+        self.bst.put('c', 'cherry')
+        self.bst.put('b', 'banana')
+        self.bst.put('a', 'apple')
         self.bst.del_key('b')
         self.assertFalse(self.bst.contains('b'))
         self.assertTrue(self.bst.assert_integrity())
     
     def test_del_key_left_with_both_children(self):
-        self.bst.put2('e', 'eggplant')
-        self.bst.put2('d', 'daisy')
-        self.bst.put2('c', 'cherry')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('a', 'apple')
+        self.bst.put('e', 'eggplant')
+        self.bst.put('d', 'daisy')
+        self.bst.put('c', 'cherry')
+        self.bst.put('b', 'banana')
+        self.bst.put('a', 'apple')
         self.bst.del_key('b')
         self.assertFalse(self.bst.contains('b'))
         self.assertTrue(self.bst.assert_integrity())
         
     def test_del_key_right_with_no_child(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('c', 'cherry')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
         self.bst.del_key('c')
         self.assertFalse(self.bst.contains('c'))
         self.assertTrue(self.bst.assert_integrity())
     
     def test_del_key_right_with_left_child(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('c', 'cherry')
-        self.bst.put2('d', 'daisy')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.bst.put('d', 'daisy')
         self.bst.del_key('d')
         self.assertFalse(self.bst.contains('d'))
         self.assertTrue(self.bst.assert_integrity())
     
     def test_del_key_right_with_both_children(self):
-        self.bst.put2('a', 'apple')
-        self.bst.put2('b', 'banana')
-        self.bst.put2('c', 'cherry')
-        self.bst.put2('d', 'daisy')
-        self.bst.put2('e', 'eggplant')
-        self.bst.put2('f', 'fig')
-        self.bst.put2('g', 'guava')
+        self.bst.put('a', 'apple')
+        self.bst.put('b', 'banana')
+        self.bst.put('c', 'cherry')
+        self.bst.put('d', 'daisy')
+        self.bst.put('e', 'eggplant')
+        self.bst.put('f', 'fig')
+        self.bst.put('g', 'guava')
         self.bst.del_key('d')
         self.assertFalse(self.bst.contains('d'))
         self.assertTrue(self.bst.assert_integrity())
@@ -1326,7 +1552,7 @@ class TestsRedBlackBST(TestsBST):
         # random keys
         keys = {randint(0, 1_000) for _ in range(100)}
         for key in keys:
-            self.bst.put2(key, str(key))
+            self.bst.put(key, str(key))
         
         keys = list(keys)
         while keys:
@@ -1342,13 +1568,13 @@ class TestsRedBlackBST(TestsBST):
 from time import sleep
 if __name__ == "__main__":
     bst = RedBlackBST()
-    bst.put2('a', 'apple')
-    bst.put2('b', 'banana')
-    bst.put2('c', 'cherry')
-    bst.put2('d', 'daisy')
-    bst.put2('e', 'eggplant')
-    bst.put2('f', 'fig')
-    bst.put2('g', 'guava')
+    bst.put('a', 'apple')
+    bst.put('b', 'banana')
+    bst.put('c', 'cherry')
+    bst.put('d', 'daisy')
+    bst.put('e', 'eggplant')
+    bst.put('f', 'fig')
+    bst.put('g', 'guava')
     # bst.del_key('b')
     bst.display()
     # bst.del_key('b')

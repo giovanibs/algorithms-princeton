@@ -1,5 +1,5 @@
-from Point2D import Point2D
-from RectHV import RectHV
+from Point2D import Point2D, TestsPoint2D
+from RectHV import RectHV, TestsRectHV
 from typing import Set
 
 class PointSET:

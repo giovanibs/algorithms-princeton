@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import math
-from Point2D import Point2D
+from Point2D import Point2D, TestsPoint2D
 
 @dataclass(frozen=True)
 class RectHV:

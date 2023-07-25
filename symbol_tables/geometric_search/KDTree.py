@@ -13,20 +13,25 @@ class KDTree:
     range search (find all of the points contained in a
     query rectangle) and nearest-neighbor search (find
     a closest point to a query point)."""
-    UNIT_SQUARE = RectHV(0, 0, 1, 1)
+    X_MIN = Y_MIN = 0
+    X_MAX = Y_MAX = 1
+    UNIT_SQUARE = RectHV(X_MIN, Y_MIN, X_MAX, Y_MAX)
+    SPLIT_V = True  # split plane vertically
+    SPLIT_H = False # split plane horizontally
     
     @dataclass
     class _Node:
         p: Point2D
-        r: RectHV   = None
+        r: RectHV
         lb: '_Node' = None     # the left/bottom subtree
         rt: '_Node' = None     # the right/top subtree
         size: int   = 1
+        split: bool = True     # spliting vertically(True) or horizontally
         
         def __post_init__(self):
             if not KDTree.UNIT_SQUARE.contains(self.p):
                 raise ValueError(f"Point `{self.p}` is out of the unit square.")
-    
+            
     def __init__(self):
         self.root: Union[None, '_Node'] = None
         
@@ -112,15 +117,33 @@ class KDTree:
         if not isinstance(p, Point2D):
             raise TypeError
         
+        if self.is_empty:
+            r = RectHV(
+                    KDTree.X_MIN,
+                    KDTree.Y_MIN,
+                    KDTree.Y_MIN,
+                    KDTree.Y_MAX,
+                )
+            self.root = self._Node(p, r)
+        
         if self.contains(p):
             return
         
         self.root = self._insert(p, self.root)
         
-    def _insert(self, p: Point2D, subtree: _Node, x_y: bool = True):
+    def _insert(self, p: Point2D, subtree: _Node, parent: _Node):
+        
+        x_y = not parent.split
+        
         # hit a leaf
         if subtree is None:
-            return self._Node(p)
+            r = RectHV(
+                KDTree.X_MIN,
+                KDTree.Y_MIN,
+                KDTree.Y_MIN,
+                KDTree.Y_MAX,
+            )
+            return self._Node(p, r, split=x_y)
         
         subtree_coord = (x_y and subtree.p.x) or (not x_y and subtree.p.y)
         p_coord = (x_y and p.x) or (not x_y and p.y)
@@ -135,6 +158,19 @@ class KDTree:
         return subtree
         
     def range(self, r: RectHV):
+        """To find all points contained in a given query rectangle:
+        
+        1) start at the root
+        
+        2) recursively search for points in both subtrees using the
+        following pruning rule:
+                - if the query rectangle does not intersect the
+                rectangle corresponding to a node, there is no
+                need to explore that node (or its subtrees).
+                
+        A subtree is searched only if it might contain a point 
+        contained in the query rectangle.
+        """
         if not isinstance(r, RectHV):
             raise TypeError
         

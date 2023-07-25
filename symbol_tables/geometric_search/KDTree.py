@@ -79,7 +79,13 @@ class KDTree:
             x_y = not x_y
             
         return False
-                    
+    
+    def contains(self, p: Point2D):
+        if not isinstance(p, Point2D):
+            raise TypeError
+        
+        return self.search(p)
+        
     def insert(self, p: Point2D):
         """
         The algorithms for insert is similar to those for BSTs,
@@ -115,12 +121,6 @@ class KDTree:
         
         elif p.x >= subtree.p.x:
             subtree.rt = self._insert(p, subtree.rt)
-        
-    def contains(self, p: Point2D):
-        if not isinstance(p, Point2D):
-            raise TypeError
-        
-        return self.search(p)
         
     def range(self, r: RectHV):
         if not isinstance(r, RectHV):
@@ -162,6 +162,63 @@ class TestsKDTree(unittest.TestCase):
         self.kd_tree.root.size = 3
         self.assertEqual(self.kd_tree.size, 3)
 
+    def test_search_empty_tree(self):
+        self.assertFalse(self.kd_tree.search(Point2D(1, 1)))
+    
+    def test_search_type_error(self):
+        with self.assertRaises(TypeError):
+            self.kd_tree.search(1)
+    
+    def test_search_not_in_tree(self):
+        self.kd_tree.root = KDTree._Node(Point2D(1, 1))
+        self.assertFalse(self.kd_tree.search(Point2D(1, 2)))
+    
+    def test_search(self):
+        p1 = Point2D(1, 1)
+        p2 = Point2D(1, 2)
+        p3 = Point2D(0, 2)
+        
+        # at root
+        self.kd_tree.root = KDTree._Node(p1)
+        self.assertTrue(self.kd_tree.search(p1))
+        
+        # deeper to the right
+        self.kd_tree.root.rt = KDTree._Node(p2)
+        self.assertTrue(self.kd_tree.search(p2))
+    
+        # deeper to the left
+        self.kd_tree.root.lb = KDTree._Node(p3)
+        self.assertTrue(self.kd_tree.search(p3))
+        
+    def test_contains_empty_tree(self):
+        self.assertFalse(self.kd_tree.contains(Point2D(1, 1)))
+        
+    def test_contains_type_error(self):
+        with self.assertRaises(TypeError):
+            self.kd_tree.contains(1)
+    
+    def test_contains_not_in_tree(self):
+        self.kd_tree.root = KDTree._Node(Point2D(1, 1))
+        self.assertFalse(self.kd_tree.contains(Point2D(1, 2)))
+    
+    def test_contains(self):
+        p1 = Point2D(1, 1)
+        p2 = Point2D(1, 2)
+        p3 = Point2D(0, 2)
+        
+        # at root
+        self.kd_tree.root = KDTree._Node(p1)
+        self.assertTrue(self.kd_tree.contains(p1))
+        
+        # deeper to the right
+        self.kd_tree.root.rt = KDTree._Node(p2)
+        self.assertTrue(self.kd_tree.contains(p2))
+    
+        # deeper to the left
+        self.kd_tree.root.lb = KDTree._Node(p3)
+        self.assertTrue(self.kd_tree.contains(p3))
+        
+    
     # def test_insert(self):
     #     p1 = Point2D(1, 1)
     #     p2 = Point2D(2, 2)

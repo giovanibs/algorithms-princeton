@@ -39,13 +39,88 @@ class KDTree:
         
         return subtree.size
     
-    def insert(self, p: Point2D):
+    def search(self, p: Point2D):
+        """
+        The algorithms for search is similar to those for BSTs,
+        but:
+        
+        1) at the root we use the x-coordinate, then:
+                - if the `p` has a smaller than the point at the
+                root, go left;
+                - otherwise go right.
+        
+        2) then at the next level, we use the y-coordinate:
+                - if `p` gas a smaller y-coordinate than the point
+                in the node, go left;
+                - otherwise go right.
+            
+        3) then at the next level, we use the x-coordinate again,
+        and so forth. 
+        """
         if not isinstance(p, Point2D):
             raise TypeError
+        
+        subtree = self.root
+        x_y = True  # x_y == True: use x-coordinate; y- otherwise
+        
+        while subtree is not None:
+            if p == subtree.p:
+                return True
+            
+            subtree_coord = (x_y and subtree.p.x) or (not x_y and subtree.p.y)
+            p_coord = (x_y and p.x) or (not x_y and p.y)
+            
+            if p_coord < subtree_coord:
+                subtree = subtree.lb
+        
+            elif p_coord >= subtree_coord:
+                subtree = subtree.rt
+                
+            x_y = not x_y
+            
+        return False
+                    
+    def insert(self, p: Point2D):
+        """
+        The algorithms for insert is similar to those for BSTs,
+        but:
+        
+        1) at the root we use the x-coordinate, then:
+                - if the point to be inserted has a smaller
+                x-coordinate than the point at the root, go left;
+                - otherwise go right.
+        
+        2) then at the next level, we use the y-coordinate:
+                - if the point to be inserted has a smallery-coordinate
+                than the point in the node, go left;
+                - otherwise go right.
+            
+        3) then at the next level, we use the x-coordinate again,
+        and so forth. 
+        """
+        if not isinstance(p, Point2D):
+            raise TypeError
+        
+        self.root = self._insert(p, self.root)
+        
+    def _insert(self, p: Point2D, subtree: _Node):
+        if subtree is None:
+            return self._Node(p)
+        
+        if p == subtree.p:
+            return subtree
+        
+        if p.x < subtree.p.x:
+            subtree.lb = self._insert(p, subtree.lb)
+        
+        elif p.x >= subtree.p.x:
+            subtree.rt = self._insert(p, subtree.rt)
         
     def contains(self, p: Point2D):
         if not isinstance(p, Point2D):
             raise TypeError
+        
+        return self.search(p)
         
     def range(self, r: RectHV):
         if not isinstance(r, RectHV):
@@ -86,3 +161,29 @@ class TestsKDTree(unittest.TestCase):
         # # many elements
         self.kd_tree.root.size = 3
         self.assertEqual(self.kd_tree.size, 3)
+
+    # def test_insert(self):
+    #     p1 = Point2D(1, 1)
+    #     p2 = Point2D(2, 2)
+        
+    #     self.kd_tree.insert(p1)
+    #     self.assertTrue(self.kd_tree.contains(p1))
+    #     self.assertEqual(self.kd_tree.size, 1)
+        
+    #     self.kd_tree.insert(p2)
+    #     self.assertTrue(self.kd_tree.contains(p2))
+    #     self.assertEqual(self.kd_tree.size, 2)
+        
+    # def test_insert_existing_element(self):
+    #     p = Point2D(1, 1)
+    #     self.kd_tree.insert(p)
+    #     self.assertTrue(self.kd_tree.contains(p))
+    #     self.kd_tree.insert(p)
+    #     self.assertTrue(self.kd_tree.contains(p))
+    #     self.assertEqual(self.kd_tree.size, 1)
+        
+    # def test_insert_type_error(self):
+    #     p = 1
+    #     with self.assertRaises(TypeError):
+    #         self.kd_tree.insert(p)
+          

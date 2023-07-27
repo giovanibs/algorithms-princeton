@@ -136,10 +136,6 @@ class KDTree:
             
         3) then at the next level, we use the x-coordinate again,
         and so forth.
-        
-        ----------- OR -----------
-        
-        Just check if `p` is contained in the `UNIT_SQUARE`
         """
         if not isinstance(p, Point2D):
             raise TypeError

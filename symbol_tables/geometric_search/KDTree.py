@@ -401,115 +401,96 @@ class TestsKDTree(unittest.TestCase):
         self.assertEqual(expected_rect, node10.rect)
         self.assertFalse(node10.split)
         
-    # def test_016_range_many_points(self):
-    #     tree = self.kd_tree
+    def test_016_range_empty_tree(self):
+        query_rect = self.kd_tree.UNIT_SQUARE
+        points = self.kd_tree.range(query_rect)
+        self.assertEqual(points, set())
         
-    #     p01 = Point2D(0.45, 0.45)
-    #     p02 = Point2D(0.7, 0.4)
-    #     p03 = Point2D(0.3, 0.6)
-    #     p04 = Point2D(0.2, 0.1)
-    #     p05 = Point2D(0.1, 0.5)
-    #     p06 = Point2D(0.4, 0.7)
-    #     p07 = Point2D(0.5, 0.3)
-    #     p08 = Point2D(0.9, 0.9)
-    #     p09 = Point2D(0.8, 0.8)
-    #     p10 = Point2D(0.6, 0.2)
+    def test_017_range_type_error(self):
+        query_rect = Point2D(.3, .4)
+        with self.assertRaises(TypeError):
+            self.kd_tree.range(query_rect)
         
-    #     tree.insert(p01)
-    #     tree.insert(p02)
-    #     tree.insert(p03)
-    #     tree.insert(p04)
-    #     tree.insert(p05)
-    #     tree.insert(p06)
-    #     tree.insert(p07)
-    #     tree.insert(p08)
-    #     tree.insert(p09)
-    #     tree.insert(p10)
+    def test_018_range_many_points(self):
+        tree = self.kd_tree
         
-    #     query_rect = tree.UNIT_SQUARE
-    #     points = tree.range(query_rect)
-    #     expected_points = {
-    #         p01,
-    #         p02,
-    #         p03,
-    #         p04,
-    #         p05,
-    #         p06,
-    #         p07,
-    #         p08,
-    #         p09,
-    #         p10,
-    #     }
-    #     self.assertEqual(expected_points, points)
+        p01 = Point2D(0.45, 0.45)
+        p02 = Point2D(0.7, 0.4)
+        p03 = Point2D(0.3, 0.6)
+        p04 = Point2D(0.2, 0.1)
+        p05 = Point2D(0.1, 0.5)
+        p06 = Point2D(0.4, 0.7)
+        p07 = Point2D(0.5, 0.3)
+        p08 = Point2D(0.9, 0.9)
+        p09 = Point2D(0.8, 0.8)
+        p10 = Point2D(0.6, 0.2)
+        
+        tree.insert(p01)
+        tree.insert(p02)
+        tree.insert(p03)
+        tree.insert(p04)
+        tree.insert(p05)
+        tree.insert(p06)
+        tree.insert(p07)
+        tree.insert(p08)
+        tree.insert(p09)
+        tree.insert(p10)
+        
+        query_rect = tree.UNIT_SQUARE
+        points = tree.range(query_rect)
+        expected_points = {
+            p01,
+            p02,
+            p03,
+            p04,
+            p05,
+            p06,
+            p07,
+            p08,
+            p09,
+            p10,
+        }
+        self.assertEqual(expected_points, points)
 
-    #     # p01
-    #     query_rect = tree.root.rect
-    #     points = tree.range(query_rect)
-    #     expected_points = {
-    #         p01,
-    #         p02,
-    #         p07,
-    #         p08,
-    #         p09,
-    #         p10,
-    #     }
-    #     self.assertEqual(expected_points, points)
+        # p01
+        query_rect = tree.root.rect
+        points = tree.range(query_rect)
+        expected_points = {
+            p01,
+            p02,
+            p07,
+            p08,
+            p09,
+            p10,
+        }
+        self.assertEqual(expected_points, points)
         
-    #     # p02
-    #     query_rect = tree.root.rt.rect
-    #     points = tree.range(query_rect)
-    #     expected_points = {
-    #         p01,
-    #         p02,
-    #         p08,
-    #         p09,
-    #     }
-    #     self.assertEqual(expected_points, points)
+        # p02
+        query_rect = tree.root.rt.rect
+        points = tree.range(query_rect)
+        expected_points = {
+            p01,
+            p02,
+            p08,
+            p09,
+        }
+        self.assertEqual(expected_points, points)
         
-    #     # p03
-    #     query_rect = tree.root.lb.rect
-    #     points = tree.range(query_rect)
-    #     expected_points = {
-    #         p03,
-    #         p06,
-    #     }
-    #     self.assertEqual(expected_points, points)
+        # p03
+        query_rect = tree.root.lb.rect
+        points = tree.range(query_rect)
+        expected_points = {
+            p03,
+            p06,
+        }
+        self.assertEqual(expected_points, points)
         
-    #     # p04
-    #     query_rect = tree.root.lb.lb.rect
-    #     pp(query_rect)
-    #     points = tree.range(query_rect)
-    #     expected_points = {
-    #         p01,
-    #         p03,
-    #         p04,
-    #     }
-    #     self.assertEqual(expected_points, points)
-
-from pprint import pp
-if __name__ == "__main__":
-    tree = KDTree()
-    
-    p01 = Point2D(0.45, 0.45)
-    p02 = Point2D(0.7, 0.4)
-    p03 = Point2D(0.3, 0.6)
-    p04 = Point2D(0.2, 0.1)
-    p05 = Point2D(0.1, 0.5)
-    p06 = Point2D(0.4, 0.7)
-    p07 = Point2D(0.5, 0.3)
-    p08 = Point2D(0.9, 0.9)
-    p09 = Point2D(0.8, 0.8)
-    p10 = Point2D(0.6, 0.2)
-    
-    tree.insert(p01)
-    tree.insert(p02)
-    tree.insert(p03)
-    tree.insert(p04)
-    tree.insert(p05)
-    tree.insert(p06)
-    tree.insert(p07)
-    tree.insert(p08)
-    tree.insert(p09)
-    tree.insert(p10)
-    
-    pp(tree.range(tree.root.rt.rect))
+        # p04
+        query_rect = tree.root.lb.lb.rect
+        points = tree.range(query_rect)
+        expected_points = {
+            p01,
+            p03,
+            p04,
+        }
+        self.assertEqual(expected_points, points)

@@ -216,6 +216,13 @@ class KDTree:
         if subtree is None:
             return nearest
         
+        # pruning rule
+        if nearest['dist'] < subtree.rect.distance_squared(query_point):
+            # closest point discovered so far is closer than
+            # the distance between the query point and the
+            # rectangle corresponding to the subtree node
+            return nearest
+        
         # (1)
         subtree_dist = subtree.point.distance_squared(query_point)
         
@@ -587,4 +594,3 @@ class TestsKDTree(unittest.TestCase):
         query_point = Point2D(.1, .3)
         nearest = self.kd_tree.nearest(query_point)
         self.assertEqual(nearest, p03)
-        

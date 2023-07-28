@@ -10,10 +10,10 @@ class RectHV:
     The rectangle is closed — it includes the points on the boundary.
     """
     
-    x_min: float            # x-coordinate of the lower-left endpoint
-    y_min: float            # y-coordinate of the lower-left endpoint
-    x_max: float            # x-coordinate of the upper-right endpoint
-    y_max: float            # y-coordinate of the upper-right endpoint
+    x_min: float    # x-coordinate of the lower-left endpoint
+    y_min: float    # y-coordinate of the lower-left endpoint
+    x_max: float    # x-coordinate of the upper-right endpoint
+    y_max: float    # y-coordinate of the upper-right endpoint
     
     def __post_init__(self):
         """
@@ -128,7 +128,45 @@ class RectHV:
             dy = p.y - self.y_max
         
         return dx*dx + dy*dy
-                    
+    
+    def __sub__(self, other: 'RectHV') -> 'RectHV':
+        """
+        Subtract one rectangle from another, assuming that `other`
+        is the RIGHT/TOP SUBPLANE resulting from splitting `self`
+        by either a VERTICAL or a HORIZONTAL line.
+
+        Args:
+            other (RectHV): The rectangle to be subtracted.
+
+        Returns:
+            RectHV: A new rectangle representing the subtraction result.
+        """
+        # left/botton corner is kept the same
+        x_min = self.x_min
+        y_min = self.y_min
+        
+        # top/right corner
+        x_max = other.x_min if (other.x_min - self.x_min) else self.x_max
+        y_max = other.y_min if (other.y_min - self.y_min) else self.y_max
+        
+        return RectHV(x_min, y_min, x_max, y_max)
+
+    def split_at(self, point: Point2D, vertically: bool):
+        """Splits the rectangle into 2 subplanes by either the
+        vertical/horizontal line containing `point` and returns
+        a tuple containing both subplanes (left/bot and right/top
+        respectively).
+        
+        We assume `point` is INSIDE the rectangle (not on the border).
+        """
+        
+        if vertically:
+            rt = RectHV(point.x, self.y_min, self.x_max, self.y_max)
+        else:
+            rt = RectHV(self.x_min, point.y, self.x_max, self.y_max)
+        
+        return self - rt, rt
+        
 # ------------------------------------------------------------------------
 # TESTS
 # ------------------------------------------------------------------------
@@ -215,3 +253,57 @@ class TestsRectHV(unittest.TestCase):
         self.assertAlmostEqual(rect.distance_squared(point_inside), 0)
         self.assertAlmostEqual(rect.distance_squared(point_outside1), 2)
         self.assertAlmostEqual(rect.distance_squared(point_outside2), 2)
+
+    def test_subtraction(self):
+        # subtract left/bot subplane (from vertical split)
+        r1 = RectHV(0, 0, 1, 1)
+        r2 = RectHV(.3, 0, 1, 1)
+        expected = RectHV(0, 0, .3, 1)
+        result = r1 - r2
+        self.assertEqual(expected, result)
+        
+        # subtract right/top subplane (from horizontal split)
+        r3 = RectHV(0, .3, 1, 1)
+        expected = RectHV(0, 0, 1, .3)
+        result = r1 - r3
+        self.assertEqual(expected, result)
+        
+    def test_split_vertically(self):
+        vertically = True
+        p = Point2D(0.4, 0.6)
+        
+        # split unit square
+        r = RectHV(0, 0, 1, 1)
+        expected_lb = RectHV(0, 0, .4, 1)
+        expected_rt = RectHV(.4, 0, 1, 1)
+        lb, rt = r.split_at(p, vertically)
+        self.assertEqual(expected_lb, lb)
+        self.assertEqual(expected_rt, rt)
+        
+        # split other
+        r = RectHV(.2, .3, .7, .8)
+        expected_lb = RectHV(.2, .3, .4, .8)
+        expected_rt = RectHV(.4, .3, .7, .8)
+        lb, rt = r.split_at(p, vertically)
+        self.assertEqual(expected_lb, lb)
+        self.assertEqual(expected_rt, rt)
+        
+    def test_split_horizontally(self):
+        horizontally = False
+        p = Point2D(0.4, 0.6)
+        
+        # split unit square
+        r = RectHV(0, 0, 1, 1)
+        expected_lb = RectHV(0, 0, 1, .6)
+        expected_rt = RectHV(0, .6, 1, 1)
+        lb, rt = r.split_at(p, horizontally)
+        self.assertEqual(expected_lb, lb)
+        self.assertEqual(expected_rt, rt)
+        
+        # split other
+        r = RectHV(.2, .3, .7, .8)
+        expected_lb = RectHV(.2, .3, .7, .6)
+        expected_rt = RectHV(.2, .6, .7, .8)
+        lb, rt = r.split_at(p, horizontally)
+        self.assertEqual(expected_lb, lb)
+        self.assertEqual(expected_rt, rt)

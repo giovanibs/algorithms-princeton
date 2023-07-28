@@ -176,13 +176,60 @@ class KDTree:
             
         return points
         
-    def nearest(self, p: Point2D) -> Point2D:
-        """a nearest neighbor in the set to point p; null if the set is empty"""
-        if not isinstance(p, Point2D):
+    def nearest(self, query_point: Point2D) -> Point2D:
+        """To find a closest point to a given query point,
+        start at the root and recursively search in both
+        subtrees using the following pruning rule:
+        
+            - if the closest point discovered so far is
+            closer than the distance between the query
+            point and the rectangle corresponding to a node,
+            there is no need to explore that node (or its
+            subtrees). That is, search a node only if it
+            might contain a point that is closer than the
+            best one found so far.
+        
+        The effectiveness of the pruning rule depends on quickly
+        finding a nearby point. To do this, organize the recursive
+        method so that when there are two possible subtrees to go
+        down, you always choose the subtree that is on the same
+        side of the splitting line as the query point as the first
+        subtree to explore — the closest point found while exploring
+        the first subtree may enable pruning of the second subtree.
+        """
+        if not isinstance(query_point, Point2D):
             raise TypeError
         
         if self.is_empty:
             return None
+        
+        nearest = {'point': None, 'dist': float('inf')}
+        return self._nearest(query_point, self.root, nearest)['point']
+        
+    def _nearest(self, query_point: Point2D, subtree: Node, nearest: dict):
+        """
+        (1) Check distance from point in node to query point.
+        (2) Recursively search left/bottom (if it could contain a closer point).
+        (3) Recursively search right/top (if it could contain a closer point).
+        (4) Organize method so that it begins by searching for query point
+        """
+        if subtree is None:
+            return nearest
+        
+        # (1)
+        subtree_dist = subtree.point.distance_squared(query_point)
+        
+        if subtree_dist < nearest['dist']:
+            nearest['point'] = subtree.point
+            nearest['dist'] = subtree_dist
+        
+        # (2)
+        nearest = self._nearest(query_point, subtree.lb, nearest)
+        # (3)
+        nearest = self._nearest(query_point, subtree.rt, nearest)
+        
+        return nearest
+        
         
 # ------------------------------------------------------------------------------
 # TESTS
@@ -494,3 +541,50 @@ class TestsKDTree(unittest.TestCase):
             p04,
         }
         self.assertEqual(expected_points, points)
+
+    def test_020_nearest_empty_tree(self):
+        p = Point2D(.2, .3)
+        self.assertIsNone(self.kd_tree.nearest(p))
+        
+    def test_021_nearest_type_error(self):
+        p = (.2, .3)
+        with self.assertRaises(TypeError):
+            self.kd_tree.nearest(p)
+    
+    def test_022_nearest_to_itself(self):
+        p01 = Point2D(.4, .3)
+        p02 = Point2D(.7, .1)
+        p03 = Point2D(.2, .5)
+        self.kd_tree.insert(p01)
+        self.kd_tree.insert(p02)
+        self.kd_tree.insert(p03)
+        
+        nearest = self.kd_tree.nearest(p01)
+        self.assertEqual(nearest, p01)
+        
+        nearest = self.kd_tree.nearest(p02)
+        self.assertEqual(nearest, p02)
+        
+        nearest = self.kd_tree.nearest(p03)
+        self.assertEqual(nearest, p03)
+        
+    def test_023_nearest(self):
+        p01 = Point2D(.4, .3)
+        p02 = Point2D(.7, .1)
+        p03 = Point2D(.2, .5)
+        self.kd_tree.insert(p01)
+        self.kd_tree.insert(p02)
+        self.kd_tree.insert(p03)
+        
+        query_point = Point2D(.5, .5)
+        nearest = self.kd_tree.nearest(query_point)
+        self.assertEqual(nearest, p01)
+        
+        query_point = Point2D(.9, .2)
+        nearest = self.kd_tree.nearest(query_point)
+        self.assertEqual(nearest, p02)
+        
+        query_point = Point2D(.1, .3)
+        nearest = self.kd_tree.nearest(query_point)
+        self.assertEqual(nearest, p03)
+        

@@ -193,14 +193,14 @@ class TestsKDTree(unittest.TestCase):
     def setUp(self) -> None:
         self.kd_tree = KDTree()
         
-    def test_tree_is_empty(self):
+    def test_000_tree_is_empty(self):
         self.assertTrue(self.kd_tree.is_empty)
     
-    def test_tree_is_not_empty(self):
+    def test_001_tree_is_not_empty(self):
         self.kd_tree.insert(Point2D(1, 1))
         self.assertFalse(self.kd_tree.is_empty)
         
-    def test_size(self):
+    def test_002_size(self):
         # empty
         self.assertEqual(self.kd_tree.size, 0)
         
@@ -213,18 +213,18 @@ class TestsKDTree(unittest.TestCase):
         self.kd_tree.insert(Point2D(0.3, 0.3))
         self.assertEqual(self.kd_tree.size, 3)
 
-    def test_search_empty_tree(self):
+    def test_003_search_empty_tree(self):
         self.assertFalse(self.kd_tree.search(Point2D(1, 1)))
     
-    def test_search_type_error(self):
+    def test_004_search_type_error(self):
         with self.assertRaises(TypeError):
             self.kd_tree.search(1)
     
-    def test_search_not_in_tree(self):
+    def test_005_search_not_in_tree(self):
         self.kd_tree.insert(Point2D(1, 1))
         self.assertFalse(self.kd_tree.search(Point2D(1, 2)))
     
-    def test_search(self):
+    def test_006_search(self):
         p1 = Point2D(1, 1)
         p2 = Point2D(1, 0.2)
         p3 = Point2D(0, 0.2)
@@ -241,20 +241,20 @@ class TestsKDTree(unittest.TestCase):
         self.kd_tree.insert(p3)
         self.assertTrue(self.kd_tree.search(p3))
         
-    def test_contains_empty_tree(self):
+    def test_007_contains_empty_tree(self):
         self.assertFalse(self.kd_tree.contains(Point2D(1, 1)))
         
-    def test_contains_type_error(self):
+    def test_008_contains_type_error(self):
         with self.assertRaises(TypeError):
             self.kd_tree.contains(1)
     
-    def test_contains_not_in_tree(self):
+    def test_009_contains_not_in_tree(self):
         p1 = Point2D(1, 1)
         self.kd_tree.insert(p1)
         p2 = Point2D(1, 0.2)
         self.assertFalse(self.kd_tree.contains(p2))
     
-    def test_contains(self):
+    def test_010_contains(self):
         p1 = Point2D(0.5, 0.5)
         p2 = Point2D(0.7, 0.7)
         p3 = Point2D(0.2, 0.2)
@@ -271,7 +271,7 @@ class TestsKDTree(unittest.TestCase):
         self.kd_tree.insert(p3)
         self.assertTrue(self.kd_tree.contains(p3))
         
-    def test_insert_empty_tree(self):
+    def test_011_insert_empty_tree(self):
         p1 = Point2D(1, 1)
         
         self.kd_tree.insert(p1)
@@ -279,7 +279,7 @@ class TestsKDTree(unittest.TestCase):
         self.assertEqual(self.kd_tree.size, 1)
         self.assertIs(self.kd_tree.root.point, p1)
         
-    def test_insert_existing_element(self):
+    def test_012_insert_existing_element(self):
         p1 = Point2D(1, 1)
         self.kd_tree.insert(p1)
         self.assertTrue(self.kd_tree.contains(p1))
@@ -291,19 +291,19 @@ class TestsKDTree(unittest.TestCase):
         self.assertIsNot(self.kd_tree.root, p2)
         self.assertEqual(self.kd_tree.size, 1)
         
-    def test_insert_type_error(self):
+    def test_013_insert_type_error(self):
         p = 1
         with self.assertRaises(TypeError):
             self.kd_tree.insert(p)
             
-    def test_insert_point_not_in_the_unit_square(self):
+    def test_014_insert_point_not_in_the_unit_square(self):
         p = Point2D(1, 2)
         with self.assertRaises(ValueError):
             self.kd_tree.insert(p)
         
         self.assertFalse(self.kd_tree.contains(p))
 
-    def test_insert_many_points(self):
+    def test_015_insert_many_points(self):
         tree = self.kd_tree
         UQ = RectHV(0, 0, 1, 1)
         p01 = Point2D(0.45, 0.45)
@@ -401,7 +401,7 @@ class TestsKDTree(unittest.TestCase):
         self.assertEqual(expected_rect, node10.rect)
         self.assertFalse(node10.split)
         
-    # def test_range_many_points(self):
+    # def test_016_range_many_points(self):
     #     tree = self.kd_tree
         
     #     p01 = Point2D(0.45, 0.45)

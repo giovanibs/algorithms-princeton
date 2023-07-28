@@ -1,9 +1,8 @@
-from __future__ import annotations
-from dataclasses import dataclass
-from typing import Union
+from typing import Union, ClassVar
 from Point2D import Point2D, TestsPoint2D
 from RectHV import RectHV, TestsRectHV
-
+from Node import Node, TestsNode
+        
 class KDTree:
     """Mutable data type to represent a set of points in
     the unit square (all points have x- and y-coordinates
@@ -16,97 +15,12 @@ class KDTree:
     X_MIN = Y_MIN = 0
     X_MAX = Y_MAX = 1
     UNIT_SQUARE = RectHV(X_MIN, Y_MIN, X_MAX, Y_MAX)
-    SPLIT_V = True  # split plane vertically
-    SPLIT_H = False # split plane horizontally
+    UNIT_SQUARE_NODE = Node(Point2D(0,0), None, UNIT_SQUARE)
     
     def __init__(self):
-        self.root: Union[None, '_Node'] = None
+        # virtual node to contain the root point
+        self.root: Union[None, Node] = None
     
-    @dataclass
-    class _Node:
-        point: Point2D
-        parent: '_Node' = None
-        outer_rect: RectHV = None
-        rect: RectHV   = None
-        lb: '_Node' = None     # the left/bottom subtree
-        rt: '_Node' = None     # the right/top subtree
-        size: int   = 1
-        split: bool = True     # spliting vertically(True) or horizontally
-        
-        def __post_init__(self):
-            if not KDTree.UNIT_SQUARE.contains(self.point):
-                raise ValueError(f"Point `{self.point}` is out of the unit square.")
-            
-            # initiate root
-            if self.parent is None:
-                self.parent = self
-            if self.outer_rect is None:
-                self.outer_rect = KDTree.UNIT_SQUARE
-                
-            self._set_rectHV()
-                
-        def _set_rectHV(self):
-            """This method defines the RectHV object associated
-            with the node. That is, it space-partitions the plane.
-            
-            1) VERTICALLY SPLIT:
-            
-                x_min: subtree.x
-                x_max: outer_rectect.x_max
-                y_min: outer_rectect.y_min
-                    
-                1.1) enclosed by its parent
-                
-                    y_max: outer_rectect.y_max
-                
-                1.2) not enclosed by its parent
-                    
-                    y_max: parent.y
-            
-            2) HORIZONTALLY SPLIT:
-                
-                x_min: outer_rect.x_min
-                y_min: subtree.y
-                y_max: outer_rectect.y_max
-                
-                2.2.1) enclosed by its parent (parent.rect.contains(p))
-                
-                    x_max: outer_rect.x_max
-                    
-                2.2.1) not enclosed by its parent
-                
-                    x_max: parent.x
-            """
-            # 1) VERTICALLY SPLIT:
-            if self.split:
-                x_min = self.point.x
-                y_min = self.outer_rect.y_min
-                x_max = self.outer_rect.x_max
-                
-                # root or not enclosed by its own parent
-                if self.parent is None or self.outer_rect is not self.parent.rect:
-                    y_max = self.outer_rect.y_max
-                
-                # not root, enclosed by its parent
-                elif self.outer_rect is self.parent.rect:
-                    y_max = self.parent.outer_rect.y_max
-                
-            # 2) HORIZONTALLY SPLIT:
-            else:
-                x_min = self.outer_rect.x_min
-                y_min = self.point.y
-                y_max = self.outer_rect.y_max
-                
-                # enclosed by its parent
-                if self.outer_rect is self.parent.rect:
-                    x_max = self.outer_rect.x_max
-                
-                else: # not enclosed by its parent
-                    x_max = KDTree.X_MAX if self.parent is None else self.parent.point.x
-            
-            # finally set the RectHV
-            self.rect = RectHV(x_min, y_min, x_max, y_max)
-                  
     @property
     def is_empty(self):
         return self.root is None
@@ -170,7 +84,23 @@ class KDTree:
         
     def insert(self, p: Point2D):
         """
-        The algorithms for insert is similar to those for BSTs,
+        Inserts point `p` into the plane.
+        """
+        if not isinstance(p, Point2D):
+            raise TypeError
+        
+        # inserts the root
+        if self.is_empty:
+            self.root = Node(p)
+            return
+        
+        if self.contains(p):
+            return
+        
+        self.root = self._insert(p, self.root, self.root)
+        
+    def _insert(self, p: Point2D, subtree, parent=None):
+        """The algorithms for insert is similar to those for BSTs,
         but:
         
         1) at the root we use the x-coordinate, then:
@@ -179,60 +109,35 @@ class KDTree:
                 - otherwise go right.
         
         2) then at the next level, we use the y-coordinate:
-                - if the point to be inserted has a smallery-coordinate
-                than the point in the node, go left;
+                - if the point to be inserted has a smaller
+                y-coordinate than the point in the node, go left;
                 - otherwise go right.
             
         3) then at the next level, we use the x-coordinate again,
-        and so forth. 
+        and so forth.
+        
+        PS.: Here, to check if the point `p` has a greater
+        x-/y-coordinate, we check if the subplane of the parent
+        node contains `p`.
         """
-        if not isinstance(p, Point2D):
-            raise TypeError
+        x_y = not parent.split
         
-        # takes care of inserting the root
-        if self.is_empty:
-            self.root = self._Node(p)
-            return
-        
-        if self.contains(p):
-            return
-        
-        self.root = self._insert(p, self.root, self.root)
-        
-    def _insert(self, p: Point2D, subtree, subtree_parent=None, outer_rect=None):
-        """
-        """
-        x_y = not subtree_parent.split
-        
-        # 1) hit a leaf
+        # hit a leaf --> return the new node
         if subtree is None:
-            return self._Node(
-                point       = p,
-                parent      = subtree_parent,
-                outer_rect  = outer_rect,
-                split       = x_y
-            )
-        # 2) p.x/y >= parent.point.x/y 
-        if subtree.rect.contains(p):
-            subtree.rt = self._insert(
-                p               = p,
-                subtree         = subtree.rt,
-                subtree_parent  = subtree,
-                outer_rect      = subtree.rect
-            )
-        # 3) p.x/y < parent.point.x/y
-        else:
-            subtree.lb = self._insert(
-                p               = p,
-                subtree         = subtree.lb,
-                subtree_parent  = subtree,
-                outer_rect      = subtree.outer_rect
-            )
+            return Node(p, parent, x_y)
         
+        # x- (vert. split) or y-coord (horiz. split) GREATER than parent
+        if subtree.rect.contains(p):
+            subtree.rt = self._insert(p, subtree.rt, subtree)
+        
+        else:
+            subtree.lb = self._insert(p, subtree.lb, subtree)
+        
+        # update sizes
         subtree.size = 1 + self._size(subtree.lb) + self._size(subtree.rt)
         return subtree
             
-    def range(self, r: RectHV):
+    def range(self, r: RectHV) -> set:
         """To find all points contained in a given query rectangle:
         
         1) start at the root
@@ -248,6 +153,28 @@ class KDTree:
         """
         if not isinstance(r, RectHV):
             raise TypeError
+        
+        points = set()
+        
+        if self.root is None:
+            return points
+        
+        self._range(r, self.root, points)
+        
+        return points
+            
+    def _range(self, r: RectHV, subtree: Node, points: set):
+        if subtree is None:
+            return points
+        
+        if r.intersects(subtree.rect):
+            if r.contains(subtree.point):
+                points.add(subtree.point)
+                
+            self._range(r, subtree.lb, points)
+            self._range(r, subtree.rt, points)
+            
+        return points
         
     def nearest(self, p: Point2D) -> Point2D:
         """a nearest neighbor in the set to point p; null if the set is empty"""
@@ -328,9 +255,9 @@ class TestsKDTree(unittest.TestCase):
         self.assertFalse(self.kd_tree.contains(p2))
     
     def test_contains(self):
-        p1 = Point2D(1, 1)
-        p2 = Point2D(1, 0.2)
-        p3 = Point2D(0, 0.2)
+        p1 = Point2D(0.5, 0.5)
+        p2 = Point2D(0.7, 0.7)
+        p3 = Point2D(0.2, 0.2)
         
         # at root
         self.kd_tree.insert(p1)
@@ -351,26 +278,6 @@ class TestsKDTree(unittest.TestCase):
         self.assertTrue(self.kd_tree.contains(p1))
         self.assertEqual(self.kd_tree.size, 1)
         self.assertIs(self.kd_tree.root.point, p1)
-        
-    def test_insert(self):
-        p1 = Point2D(0.5, 0.5)
-        p2 = Point2D(0.2, 0.2)
-        p3 = Point2D(0.7, 0.7)
-        
-        self.kd_tree.insert(p1)
-        self.assertTrue(self.kd_tree.contains(p1))
-        self.assertEqual(self.kd_tree.size, 1)
-        
-        self.kd_tree.insert(p2)
-        self.assertTrue(self.kd_tree.contains(p1))
-        self.assertTrue(self.kd_tree.contains(p2))
-        self.assertEqual(self.kd_tree.size, 2)
-        
-        self.kd_tree.insert(p3)
-        self.assertTrue(self.kd_tree.contains(p1))
-        self.assertTrue(self.kd_tree.contains(p2))
-        self.assertTrue(self.kd_tree.contains(p3))
-        self.assertEqual(self.kd_tree.size, 3)
         
     def test_insert_existing_element(self):
         p1 = Point2D(1, 1)
@@ -398,7 +305,7 @@ class TestsKDTree(unittest.TestCase):
 
     def test_insert_many_points(self):
         tree = self.kd_tree
-        
+        UQ = RectHV(0, 0, 1, 1)
         p01 = Point2D(0.45, 0.45)
         p02 = Point2D(0.7, 0.4)
         p03 = Point2D(0.3, 0.6)
@@ -410,98 +317,199 @@ class TestsKDTree(unittest.TestCase):
         p09 = Point2D(0.8, 0.8)
         p10 = Point2D(0.6, 0.2)
         
-        tree.insert(p01)
-        tree.insert(p02)
-        tree.insert(p03)
-        tree.insert(p04)
-        tree.insert(p05)
-        tree.insert(p06)
-        tree.insert(p07)
-        tree.insert(p08)
-        tree.insert(p09)
-        tree.insert(p10)
-
+        # --------- LEVEL 0 / ROOT ---------
         # p01
+        tree.insert(p01)
         node01 = tree.root
         self.assertEqual(node01.point, p01)
-        self.assertEqual(node01.lb.point, p03)
-        self.assertEqual(node01.rt.point, p02)
-        expected_outer_rect = KDTree.UNIT_SQUARE
-        self.assertEqual(node01.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p01.x, UQ.y_min, UQ.x_max, UQ.y_max)
+        self.assertEqual(expected_rect, node01.rect)
+        self.assertTrue(node01.split)
         
-        # p02
+        # --------- LEVEL 01 ---------
+        # p02 
+        tree.insert(p02)
         node02 = node01.rt
         self.assertEqual(node02.point, p02)
-        self.assertEqual(node02.lb.point, p07)
-        self.assertEqual(node02.rt.point, p08)
-        expected_outer_rect = node01.rect
-        self.assertEqual(node02.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p01.x, p02.y, UQ.x_max, UQ.y_max)
+        self.assertEqual(expected_rect, node02.rect)
+        self.assertFalse(node02.split)
         
         # p03
+        tree.insert(p03)
         node03 = node01.lb
         self.assertEqual(node03.point, p03)
-        self.assertEqual(node03.lb.point, p04)
-        self.assertEqual(node03.rt.point, p06)
-        expected_outer_rect = node01.outer_rect
-        self.assertEqual(node03.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(0, p03.y, p01.x, 1)
+        self.assertEqual(expected_rect, node03.rect)
+        self.assertFalse(node03.split)
         
-        # p04
+        # --------- DEEPER LEVEL ---------
+        #  p04
+        tree.insert(p04)
         node04 = node03.lb
         self.assertEqual(node04.point, p04)
-        self.assertEqual(node04.lb.point, p05)
-        self.assertIsNone(node04.rt)
-        expected_outer_rect = node03.outer_rect
-        self.assertEqual(node04.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p04.x, 0, p01.x, p03.y)
+        self.assertEqual(expected_rect, node04.rect)
+        self.assertTrue(node04.split)
         
         # p05
+        tree.insert(p05)
         node05 = node04.lb
         self.assertEqual(node05.point, p05)
-        self.assertIsNone(node05.lb)
-        self.assertIsNone(node05.rt)
-        expected_outer_rect = node04.outer_rect
-        self.assertEqual(node05.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(0, p05.y, p04.x, p03.y)
+        self.assertEqual(expected_rect, node05.rect)
+        self.assertFalse(node05.split)
         
         # p06
+        tree.insert(p06)
         node06 = node03.rt
         self.assertEqual(node06.point, p06)
-        self.assertIsNone(node06.lb)
-        self.assertIsNone(node06.rt)
-        expected_outer_rect = node03.rect
-        self.assertEqual(node06.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p06.x, p03.y, p01.x, 1)
+        self.assertEqual(expected_rect, node06.rect)
+        self.assertTrue(node06.split)
         
         # p07
+        tree.insert(p07)
         node07 = node02.lb
         self.assertEqual(node07.point, p07)
-        self.assertIsNone(node07.lb)
-        self.assertEqual(node07.rt.point, p10)
-        expected_outer_rect = node02.outer_rect
-        self.assertEqual(node07.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p07.x, 0, 1, p02.y)
+        self.assertEqual(expected_rect, node07.rect)
+        self.assertTrue(node07.split)
         
         # p08
+        tree.insert(p08)
         node08 = node02.rt
         self.assertEqual(node08.point, p08)
-        self.assertEqual(node08.lb.point, p09)
-        self.assertIsNone(node08.rt)
-        expected_outer_rect = node02.rect
-        self.assertEqual(node08.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p08.x, p02.y, 1, 1)
+        self.assertEqual(expected_rect, node08.rect)
+        self.assertTrue(node08.split)
         
         # p09
+        tree.insert(p09)
         node09 = node08.lb
         self.assertEqual(node09.point, p09)
-        self.assertIsNone(node09.lb)
-        self.assertIsNone(node09.rt)
-        expected_outer_rect = node08.outer_rect
-        self.assertEqual(node09.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p01.x, p09.y, p08.x, 1)
+        self.assertEqual(expected_rect, node09.rect)
+        self.assertFalse(node09.split)
         
         # p10
+        tree.insert(p10)
+        # self.assertEqual(node07.rt.point, p10)
         node10 = node07.rt
         self.assertEqual(node10.point, p10)
-        self.assertIsNone(node10.lb)
-        self.assertIsNone(node10.rt)
-        expected_outer_rect = node07.rect
-        self.assertEqual(node10.outer_rect, expected_outer_rect)
+        expected_rect = RectHV(p07.x, p10.y, 1, p02.y)
+        self.assertEqual(expected_rect, node10.rect)
+        self.assertFalse(node10.split)
         
+    # def test_range_many_points(self):
+    #     tree = self.kd_tree
         
+    #     p01 = Point2D(0.45, 0.45)
+    #     p02 = Point2D(0.7, 0.4)
+    #     p03 = Point2D(0.3, 0.6)
+    #     p04 = Point2D(0.2, 0.1)
+    #     p05 = Point2D(0.1, 0.5)
+    #     p06 = Point2D(0.4, 0.7)
+    #     p07 = Point2D(0.5, 0.3)
+    #     p08 = Point2D(0.9, 0.9)
+    #     p09 = Point2D(0.8, 0.8)
+    #     p10 = Point2D(0.6, 0.2)
+        
+    #     tree.insert(p01)
+    #     tree.insert(p02)
+    #     tree.insert(p03)
+    #     tree.insert(p04)
+    #     tree.insert(p05)
+    #     tree.insert(p06)
+    #     tree.insert(p07)
+    #     tree.insert(p08)
+    #     tree.insert(p09)
+    #     tree.insert(p10)
+        
+    #     query_rect = tree.UNIT_SQUARE
+    #     points = tree.range(query_rect)
+    #     expected_points = {
+    #         p01,
+    #         p02,
+    #         p03,
+    #         p04,
+    #         p05,
+    #         p06,
+    #         p07,
+    #         p08,
+    #         p09,
+    #         p10,
+    #     }
+    #     self.assertEqual(expected_points, points)
+
+    #     # p01
+    #     query_rect = tree.root.rect
+    #     points = tree.range(query_rect)
+    #     expected_points = {
+    #         p01,
+    #         p02,
+    #         p07,
+    #         p08,
+    #         p09,
+    #         p10,
+    #     }
+    #     self.assertEqual(expected_points, points)
+        
+    #     # p02
+    #     query_rect = tree.root.rt.rect
+    #     points = tree.range(query_rect)
+    #     expected_points = {
+    #         p01,
+    #         p02,
+    #         p08,
+    #         p09,
+    #     }
+    #     self.assertEqual(expected_points, points)
+        
+    #     # p03
+    #     query_rect = tree.root.lb.rect
+    #     points = tree.range(query_rect)
+    #     expected_points = {
+    #         p03,
+    #         p06,
+    #     }
+    #     self.assertEqual(expected_points, points)
+        
+    #     # p04
+    #     query_rect = tree.root.lb.lb.rect
+    #     pp(query_rect)
+    #     points = tree.range(query_rect)
+    #     expected_points = {
+    #         p01,
+    #         p03,
+    #         p04,
+    #     }
+    #     self.assertEqual(expected_points, points)
+
 from pprint import pp
 if __name__ == "__main__":
     tree = KDTree()
+    
+    p01 = Point2D(0.45, 0.45)
+    p02 = Point2D(0.7, 0.4)
+    p03 = Point2D(0.3, 0.6)
+    p04 = Point2D(0.2, 0.1)
+    p05 = Point2D(0.1, 0.5)
+    p06 = Point2D(0.4, 0.7)
+    p07 = Point2D(0.5, 0.3)
+    p08 = Point2D(0.9, 0.9)
+    p09 = Point2D(0.8, 0.8)
+    p10 = Point2D(0.6, 0.2)
+    
+    tree.insert(p01)
+    tree.insert(p02)
+    tree.insert(p03)
+    tree.insert(p04)
+    tree.insert(p05)
+    tree.insert(p06)
+    tree.insert(p07)
+    tree.insert(p08)
+    tree.insert(p09)
+    tree.insert(p10)
+    
+    pp(tree.range(tree.root.rt.rect))

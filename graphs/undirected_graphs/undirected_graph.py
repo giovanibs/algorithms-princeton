@@ -73,6 +73,6 @@ class Graph:
     
     def _validate_vertex(self, v):
         if not isinstance(v, int):
-            raise ValueError(Graph.VERTEX_NOT_INTEGER)
+            raise TypeError(Graph.VERTEX_NOT_INTEGER)
         if not isinstance(v, int) or v < 0:
             raise ValueError(Graph.VERTEX_NOT_POSITIVE)

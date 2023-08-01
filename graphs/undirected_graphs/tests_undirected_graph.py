@@ -44,7 +44,7 @@ class TestsUndirectedGraph(unittest.TestCase):
     def test_022_add_edge_vertex_not_integer(self):
         V = 3
         graph = Graph(V)
-        with self.assertRaisesRegex(ValueError, Graph.VERTEX_NOT_INTEGER):
+        with self.assertRaisesRegex(TypeError, Graph.VERTEX_NOT_INTEGER):
             graph.add_edge(0, "2")
     
     def test_022_add_edge_vertex_not_positive_integer(self):

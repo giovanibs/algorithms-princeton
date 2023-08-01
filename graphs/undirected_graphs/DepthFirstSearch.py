@@ -52,30 +52,32 @@ class DFS:
 import unittest
 
 class TestsDFS(unittest.TestCase):
-    
+    def setUp(self) -> None:
+        self.DF = DFS
+
     def test_000_init_type_error_not_a_graph(self):
-        with self.assertRaisesRegex(TypeError, DFS.NOT_A_GRAPH):
-            DFS("G", 0)
+        with self.assertRaisesRegex(TypeError, self.DF.NOT_A_GRAPH):
+            self.DF("G", 0)
     
     def test_001_init_type_error_not_a_integer(self):
         G = Graph(0)
         with self.assertRaisesRegex(TypeError, Graph.VERTEX_NOT_INTEGER):
-            DFS(G, "0")
+            self.DF(G, "0")
     
     def test_002_init_value_error_negative_integer(self):
         G = Graph(0)
         with self.assertRaisesRegex(ValueError, Graph.VERTEX_NOT_POSITIVE):
-            DFS(G, -1)
+            self.DF(G, -1)
 
     def test_003_init_vertex_not_in_graph(self):
         G = Graph(0)
         with self.assertRaisesRegex(IndexError, Graph.VERTEX_NOT_IN_GRAPH):
-            DFS(G, 1)
+            self.DF(G, 1)
     
     def test_004_init_correct_marked_length(self):
         for V in range(1, 100):
             G = Graph(V)
-            dfs = DFS(G, 0)
+            dfs = self.DF(G, 0)
             expected = G.vertices_count
             marked_length = len(dfs._marked)
             self.assertEqual(expected, marked_length)
@@ -85,7 +87,7 @@ class TestsDFS(unittest.TestCase):
         G = Graph(V)
         
         for v in range(G.vertices_count):
-            dfs = DFS(G, v)
+            dfs = self.DF(G, v)
             self.assertEqual(dfs.count, 1) # only the vertex itself
     
     def test_011_dfs_two_connected_vertices(self):
@@ -94,10 +96,10 @@ class TestsDFS(unittest.TestCase):
         v0, v1 = 0, 1
         G.add_edge(v0, v1)
         
-        dfs_v0 = DFS(G, v0)
+        dfs_v0 = self.DF(G, v0)
         self.assertEqual(dfs_v0.count, 2) # itself and `v1`
         
-        dfs_v1 = DFS(G, v1)
+        dfs_v1 = self.DF(G, v1)
         self.assertEqual(dfs_v1.count, 2) # itself and `v0`
     
     def test_012_dfs_two_connected_vertices_and_one_not(self):
@@ -106,13 +108,13 @@ class TestsDFS(unittest.TestCase):
         v0, v1, v2 = 0, 1, 2
         G.add_edge(v0, v1)
         
-        dfs_v0 = DFS(G, v0)
+        dfs_v0 = self.DF(G, v0)
         self.assertEqual(dfs_v0.count, 2) # itself and `v1`
         
-        dfs_v1 = DFS(G, v1)
+        dfs_v1 = self.DF(G, v1)
         self.assertEqual(dfs_v1.count, 2) # itself and `v0`
         
-        dfs_v2 = DFS(G, v2)
+        dfs_v2 = self.DF(G, v2)
         self.assertEqual(dfs_v2.count, 1) # only `v2` itself
     
     def test_013_dfs_many_connected(self):
@@ -122,13 +124,13 @@ class TestsDFS(unittest.TestCase):
         G.add_edge(v0, v1)
         G.add_edge(v1, v2)
         
-        dfs_v0 = DFS(G, v0)
+        dfs_v0 = self.DF(G, v0)
         self.assertEqual(dfs_v0.count, 3) # itself + others
         
-        dfs_v1 = DFS(G, v1)
+        dfs_v1 = self.DF(G, v1)
         self.assertEqual(dfs_v1.count, 3) # itself + others
         
-        dfs_v2 = DFS(G, v2)
+        dfs_v2 = self.DF(G, v2)
         self.assertEqual(dfs_v2.count, 3) # itself + others
     
     def test_020_marked_vertex_not_in_graph(self):
@@ -136,7 +138,7 @@ class TestsDFS(unittest.TestCase):
         G = Graph(V)
         v0, v1, v_not_in_graph = 0, 1, 2
         G.add_edge(v0, v1)
-        dfs = DFS(G, v0)
+        dfs = self.DF(G, v0)
         
         with self.assertRaisesRegex(IndexError, Graph.VERTEX_NOT_IN_GRAPH):
             dfs.marked(v_not_in_graph)
@@ -147,17 +149,17 @@ class TestsDFS(unittest.TestCase):
         v0, v1, v2 = 0, 1, 2
         G.add_edge(v0, v1)
         
-        dfs_v0 = DFS(G, v0)
+        dfs_v0 = self.DF(G, v0)
         self.assertTrue(dfs_v0.marked(v0))      # itself
         self.assertTrue(dfs_v0.marked(v1))      # v1 connected
         self.assertFalse(dfs_v0.marked(v2))     # v2 not connected
         
-        dfs_v1 = DFS(G, v1)
+        dfs_v1 = self.DF(G, v1)
         self.assertTrue(dfs_v1.marked(v0))      # v0 connected
         self.assertTrue(dfs_v1.marked(v1))      # itself
         self.assertFalse(dfs_v1.marked(v2))     # v2 not connected
         
-        dfs_v2 = DFS(G, v2)
+        dfs_v2 = self.DF(G, v2)
         self.assertFalse(dfs_v2.marked(v0))     # v0 not connected
         self.assertFalse(dfs_v2.marked(v1))     # v1 not connected
         self.assertTrue(dfs_v2.marked(v2))      # itself

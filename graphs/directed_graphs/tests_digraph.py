@@ -1,7 +1,7 @@
 import unittest
 from digraph import Digraph
 
-class TestsUndirectedDigraph(unittest.TestCase):
+class TestsDigraph(unittest.TestCase):
     def test_000_init_graph(self):
         V = 3
         graph = Digraph(V)

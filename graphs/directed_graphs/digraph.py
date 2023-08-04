@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class Digraph:
     """
     Set of vertices connected pairwise by DIRECTED edges. 
@@ -17,7 +19,7 @@ class Digraph:
     INIT_V_NOT_INTEGER  = "Number of vertices must be a integer!"
     INIT_V_NOT_POSITIVE = "Number of vertices must be a positive integer!"
 
-    def __init__(self, V: int):
+    def __init__(self, V: int) -> None:
         """
         Initializes a digraph with V vertices and 0 edges.
         """
@@ -26,8 +28,8 @@ class Digraph:
         if V < 0:
             raise ValueError(Digraph.INIT_V_NOT_POSITIVE)
         
-        self._vertex_count = V
-        self._edge_count   = 0
+        self._edge_count   : int = 0
+        self._vertex_count : int = V
 
         # adjacency lists for OUTGOING vertices
         self._directed_out_of : list[set] = [set() for _ in range(V)]
@@ -36,7 +38,7 @@ class Digraph:
 
     # ------------------------------- #
     # --- PUBLIC API
-    def add_vertex(self):
+    def add_vertex(self) -> int:
         """
         Adds a new vertex to the
         digraph and returns its name.
@@ -47,7 +49,7 @@ class Digraph:
 
         return self._vertex_count
 
-    def add_edge(self, v: int, w: int):
+    def add_edge(self, v: int, w: int) -> None:
         """Adds `v -> w` edge to the digraph."""
         if not (self.has_vertex(v) and self.has_vertex(w)):
             raise IndexError(Digraph.VERTEX_NOT_IN_GRAPH)
@@ -59,7 +61,7 @@ class Digraph:
         self._directed_into  [w].add(v)
         self._edge_count   += 1
 
-    def has_vertex(self, v):
+    def has_vertex(self, v: int) -> bool:
         """
         Check if the digraph contains vertex `v`.
         """
@@ -67,14 +69,14 @@ class Digraph:
         return 0 <= v < self._vertex_count
     
     @property
-    def vertex_count(self):
+    def vertex_count(self) -> int:
         return self._vertex_count
     
     @property
-    def edge_count(self):
+    def edge_count(self) -> int:
         return self._edge_count
     
-    def directed_out_of(self, v):
+    def directed_out_of(self, v: int) -> set:
         """Returns all adjacent vertices
         that has an edge DIRECTED FROM `v`"""
         if not self.has_vertex(v):
@@ -82,7 +84,7 @@ class Digraph:
         
         return self._directed_out_of[v]
     
-    def directed_into(self, v):
+    def directed_into(self, v: int) -> set:
         """Returns all adjacent vertices
         that has an edge DIRECTED TO `v`"""
         if not self.has_vertex(v):
@@ -90,7 +92,7 @@ class Digraph:
         
         return self._directed_into[v]
     
-    def outdegree(self, v):
+    def outdegree(self, v: int) -> int:
         """Returns the number of directed
         edges incident FROM `v`"""
         if not self.has_vertex(v):
@@ -98,7 +100,7 @@ class Digraph:
         
         return len(self._directed_out_of[v]) 
 
-    def indegree(self, v):
+    def indegree(self, v: int) -> int:
         """Returns the number of directed
         edges incident TO `v`"""
         if not self.has_vertex(v):
@@ -106,7 +108,7 @@ class Digraph:
         
         return len(self._directed_into[v])
     
-    def reverse(self):
+    def reverse(self) -> Digraph:
         """Returns a reversed (deep-)copy
         of the instance digraph.
         
@@ -117,7 +119,7 @@ class Digraph:
         r = Digraph(self._vertex_count)
 
         r._edge_count = self._edge_count
-        
+
         r._directed_out_of = [ edge.copy() for edge in self._directed_into   ]
         r._directed_into   = [ edge.copy() for edge in self._directed_out_of ]
 
@@ -125,7 +127,7 @@ class Digraph:
 
     # ------------------------------- #
     # --- HELPER METHODS/PROPERTIES
-    def _validate_vertex(self, v):
+    def _validate_vertex(self, v: int):
         if not isinstance(v, int):
             raise TypeError(Digraph.VERTEX_NOT_INTEGER)
         if not isinstance(v, int) or v < 0:

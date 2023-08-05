@@ -138,6 +138,19 @@ class TestsDigraphDFS(unittest.TestCase):
             self.assertEqual( len(dfs._marked) , V      )
             self.assertEqual( len(dfs._edge_to), V      )
     
+    def test_006_init__multisource(self):
+        multisource = {self.not_connected, self.strictly_out_of}
+
+        multisource_dfs = DigraphDFS(self.G, multisource)
+        self.assertEqual( multisource_dfs._S, multisource )
+
+        self.assertTrue( multisource_dfs._marked[ self.one_from_source ] )
+        self.assertTrue( multisource_dfs._marked[ self.two_from_source ] )
+        self.assertTrue( multisource_dfs._marked[ self.strictly_into   ] )
+        self.assertTrue( multisource_dfs._marked[ self.double_linked   ] )
+        self.assertTrue( multisource_dfs._marked[ self.strictly_out_of ] )
+        self.assertTrue( multisource_dfs._marked[ self.not_connected   ] )
+    
     def test_100_dfs__graph_with_no_edges(self):
         V = 5
         G = Digraph(V)

@@ -362,3 +362,27 @@ class TestsDigraphBFP(unittest.TestCase):
         expected = [source, farther_vertex]
         self.assertEqual(result, expected)
         
+    def test_307_shortest_path_to__multisource(self):
+        three_from_source = self.G.add_vertex()
+        self.G.add_edge(self.two_from_source, three_from_source)
+        
+        closer_source = self.G.add_vertex()
+        self.G.add_edge(closer_source, self.two_from_source)
+
+        new_sources = {self.source, closer_source}
+        bfp = DigraphBFP(self.G, new_sources)
+
+        # one_from_source        
+        result   = bfp.shortest_path_to(self.one_from_source)
+        expected = [self.source, self.one_from_source]
+        self.assertEqual(result, expected)
+        # two_from_source
+        result   = bfp.shortest_path_to(self.two_from_source)
+        expected = [closer_source, self.two_from_source]
+        self.assertEqual(result, expected)
+        # three_from_source
+        result   = bfp.shortest_path_to(three_from_source)
+        expected = [closer_source, self.two_from_source, three_from_source]
+        self.assertEqual(result, expected)
+
+

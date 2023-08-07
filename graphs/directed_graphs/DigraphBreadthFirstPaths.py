@@ -76,6 +76,22 @@ class DigraphBFP:
         
         return self._marked[v]
     
+    def shortest_path_to(self, v: int) -> None | list:
+        if not self._DG.has_vertex(v):
+            raise IndexError(Digraph.VERTEX_NOT_IN_GRAPH)
+        
+        if not self.is_reachable(v):
+            return None
+        
+        shortest_path = [v]
+        w = v
+
+        while w not in self._S:
+            w = self._edge_to[w]
+            shortest_path.append(w)
+
+        return shortest_path[::-1]
+
     @property
     def count(self) -> int:
         """Returns number of vertices with an incoming
@@ -206,7 +222,6 @@ class TestsDigraphBFP(unittest.TestCase):
                 
                 # dist_to[sources] == 0
                 self.assertEqual( bfp._dist_to[s], 0 )
-
     
     def test_007_init__multisource_with_edges(self):
         multisource = {self.not_connected, self.strictly_outbound}
@@ -237,41 +252,52 @@ class TestsDigraphBFP(unittest.TestCase):
         self.assertFalse( self.bfp._marked[ self.strictly_outbound] )
         self.assertFalse( self.bfp._marked[ self.not_connected    ] )
         
-    def test_102_bfs__source_is_strictly_inbound_vertex(self):
+    def test_102_bfs__strictly_inbound_vertex(self):
         self.assertTrue     ( self.bfp._marked [self.strictly_inbound] )
         self.assertIsNotNone( self.bfp._edge_to[self.strictly_inbound] )
+        
+        self.assertEqual( self.bfp._dist_to[self.strictly_inbound], 1 )
 
         bfp = DigraphBFP(self.G, self.strictly_inbound)
         self.assertTrue( any(bfp._marked[1:]) )         # except itself 
 
-    def test_103_bfs__source_is_strictly_outbound_vertex(self):
+    def test_103_bfs__strictly_outbound_vertex(self):
         self.assertFalse ( self.bfp._marked [self.strictly_outbound] )
         self.assertIsNone( self.bfp._edge_to[self.strictly_outbound] )
+        self.assertIsNone( self.bfp._dist_to[self.strictly_outbound] )
 
         bfp = DigraphBFP(self.G, self.strictly_outbound)
         self.assertTrue( all(bfp._marked[:-1]) )     # all except not_connected
         
-    def test_104_bfs__source_is_double_linked(self):
+    def test_104_bfs__double_linked_vertex(self):
         original_source = self.source
-        double_linked   = self.double_linked
+        original_bfp    = self.bfp
+        new_source      = self.double_linked
 
-        bfp = DigraphBFP(self.G, double_linked)
-        self.assertTrue ( bfp._marked[original_source] )
-        self.assertEqual( bfp._edge_to[original_source], double_linked )
+        self.assertTrue ( original_bfp._marked [new_source] )
+        self.assertEqual( original_bfp._edge_to[new_source], original_source )
+        self.assertEqual( original_bfp._dist_to[new_source], 1 )
+
+        new_bfp = DigraphBFP(self.G, new_source)
+        self.assertTrue ( new_bfp._marked[original_source] )
+        self.assertEqual( new_bfp._edge_to[original_source], new_source )
+        self.assertEqual( new_bfp._dist_to[original_source], 1 )
     
-    def test_105_bfs__source_is_directed_path(self):
-        old_source      = self.source
-        two_from_source = self.two_from_source
-        one_from_source = self.one_from_source
+    def test_105_bfs__vertices_on_directed_path(self):
+        bfp = self.bfp
+        s   = self.source
+        two_from_s = self.two_from_source
+        one_from_s = self.one_from_source
         
-        bfp = DigraphBFP(self.G, one_from_source)
-        self.assertFalse( bfp._marked[old_source] )
-        self.assertTrue ( bfp._marked[two_from_source] )
+        self.assertTrue( bfp._marked [one_from_s] )
+        self.assertTrue( bfp._marked [two_from_s] )
         
-        bfp = DigraphBFP(self.G, two_from_source)
-        self.assertFalse( bfp._marked[old_source]           )
-        self.assertFalse( bfp._marked[self.one_from_source] )
-
+        self.assertEqual( bfp._edge_to[one_from_s], s )
+        self.assertEqual( bfp._edge_to[two_from_s], one_from_s )
+        
+        self.assertEqual( bfp._dist_to[one_from_s], 1 )
+        self.assertEqual( bfp._dist_to[two_from_s], 2 )
+        
     def test_200_is_reachable__a_vertex_not_in_graph(self):
         with self.assertRaisesRegex(IndexError, Digraph.VERTEX_NOT_IN_GRAPH):
             self.bfp.is_reachable(self.not_in_graph)
@@ -284,4 +310,63 @@ class TestsDigraphBFP(unittest.TestCase):
         self.assertFalse( self.bfp.is_reachable( self.strictly_outbound) )
         self.assertFalse( self.bfp.is_reachable( self.not_connected    ) )
 
+    def test_300_shortest_path_to__vertex_not_in_graph(self):
+        with self.assertRaisesRegex(IndexError, Digraph.VERTEX_NOT_IN_GRAPH):
+            self.bfp.shortest_path_to(self.not_in_graph)
 
+    def test_301_shortest_path_to__vertex_not_connected(self):
+        self.assertIsNone(self.bfp.shortest_path_to(self.not_connected))
+
+    def test_302_shortest_path_to__strictly_inbound_vertex(self):
+        result   = self.bfp.shortest_path_to(self.strictly_inbound)
+        expected = [ self.source, self.strictly_inbound ]
+        self.assertEqual(result, expected)
+
+    def test_303_shortest_path_to__strictly_outbound_vertex(self):
+        result   = self.bfp.shortest_path_to(self.strictly_outbound)
+        expected = None
+        self.assertEqual(result, expected)
+
+    def test_304_shortest_path_to__double_linked_vertex(self):
+        result   = self.bfp.shortest_path_to(self.double_linked)
+        expected = [ self.source, self.double_linked ]
+        self.assertEqual(result, expected)
+
+    def test_305_shortest_path_to__vertices_on_directed_path(self):
+        result   = self.bfp.shortest_path_to(self.one_from_source)
+        expected = [ self.source, self.one_from_source ]
+        self.assertEqual(result, expected)
+
+        result   = self.bfp.shortest_path_to(self.two_from_source)
+        expected = [ self.source, self.one_from_source, self.two_from_source ]
+        self.assertEqual(result, expected)
+
+    def test_306_shortest_path_to(self):
+        dg              = self.G
+        source          = self.source
+        one_from_source = self.one_from_source
+        two_from_source = self.two_from_source
+        
+        farther_vertex  = dg.add_vertex()
+
+        dg.add_edge(two_from_source, farther_vertex)
+        
+        bfp      = DigraphBFP(dg, source)
+        result   = bfp.shortest_path_to(farther_vertex)
+        expected = [source, one_from_source, two_from_source, farther_vertex]
+        self.assertEqual(result, expected)
+        
+        dg.add_edge(one_from_source, farther_vertex)
+        
+        bfp      = DigraphBFP(dg, source)
+        result   = bfp.shortest_path_to(farther_vertex)
+        expected = [source, one_from_source, farther_vertex]
+        self.assertEqual(result, expected)
+        
+        dg.add_edge(source, farther_vertex)
+        
+        bfp      = DigraphBFP(dg, source)
+        result   = bfp.shortest_path_to(farther_vertex)
+        expected = [source, farther_vertex]
+        self.assertEqual(result, expected)
+        

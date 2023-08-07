@@ -131,7 +131,7 @@ class TestsDigraphBFP(unittest.TestCase):
         with self.assertRaisesRegex(IndexError, Digraph.VERTEX_NOT_IN_GRAPH):
             DigraphBFP(self.G, self.not_in_graph)
     
-    def assertDigraphBFPConsistency(self, dg: Digraph, sources, bfp: DigraphBFP):
+    def assertBFPConsistency(self, dg: Digraph, sources, bfp: DigraphBFP):
         self.assertEqual( bfp._S , sources )
         self.assertEqual( bfp._DG, dg     )
         # assert collection attrs length
@@ -150,7 +150,7 @@ class TestsDigraphBFP(unittest.TestCase):
             dg  = Digraph(V)
             bfp = DigraphBFPDouble(dg, sources)
             
-            self.assertAttrsConsistency(dg, sources, bfp)
+            self.assertBFPConsistency(dg, sources, bfp)
             # assert collection attrs initial state
             self.assertEqual( set(bfp._marked) , {False} )
             self.assertEqual( set(bfp._edge_to), {None}  )
@@ -164,7 +164,7 @@ class TestsDigraphBFP(unittest.TestCase):
             dg  = Digraph(V)
             bfp = DigraphBFP(dg, source)
 
-            self.assertAttrsConsistency(dg, source, bfp)
+            self.assertBFPConsistency(dg, source, bfp)
             
             # marked[source] == True
             self.assertTrue ( bfp._marked[s])
@@ -187,7 +187,7 @@ class TestsDigraphBFP(unittest.TestCase):
             dg  = Digraph(V)
             bfp = DigraphBFP(dg, sources)
 
-            self.assertAttrsConsistency(dg, sources, bfp)
+            self.assertBFPConsistency(dg, sources, bfp)
             
             # marked[others] == False
             self.assertFalse( any(bfp._marked[2:]))
@@ -212,7 +212,7 @@ class TestsDigraphBFP(unittest.TestCase):
         multisource = {self.not_connected, self.strictly_outbound}
 
         bfp = DigraphBFP(self.G, multisource)
-        self.assertAttrsConsistency(self.G, multisource, bfp)
+        self.assertBFPConsistency(self.G, multisource, bfp)
 
         self.assertTrue( bfp._marked[ self.one_from_source  ] )
         self.assertTrue( bfp._marked[ self.two_from_source  ] )

@@ -47,7 +47,7 @@ class Digraph:
         self._directed_into  .append(set())
         self._vertex_count += 1
 
-        return self._vertex_count
+        return self._vertex_count - 1
 
     def add_edge(self, v: int, w: int) -> None:
         """Adds `v -> w` edge to the digraph."""

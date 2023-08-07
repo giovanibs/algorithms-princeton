@@ -26,11 +26,13 @@ class TestsDigraph(unittest.TestCase):
         len_old_incoming = len(dg._directed_into  )
         old_vertex_count = dg.vertex_count
 
-        dg.add_vertex()
+        new_vertex       = dg.add_vertex()
         len_new_outgoing = len(dg._directed_out_of)
         len_new_incoming = len(dg._directed_into  )
         new_vertex_count = dg.vertex_count
 
+        self.assertEqual( new_vertex        , old_vertex_count     )
+        self.assertEqual( len_new_outgoing  , len_old_outgoing  + 1)
         self.assertEqual( len_new_outgoing  , len_old_outgoing  + 1)
         self.assertEqual( len_new_incoming  , len_old_incoming  + 1)
         self.assertEqual( new_vertex_count  , old_vertex_count  + 1)

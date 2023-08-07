@@ -41,20 +41,20 @@ class DigraphBFP:
         # --- SEARCH --- #
         self._bfs(DG, sources)
 
-    def _bfs(self, DG: Digraph, sources: set[int]):
+    def _bfs(self):
         """
-        Put `sources` onto a FIFO queue and mark them as visited.
-        Repeat until the queue is empty:
-            - remove the least recently added vertex `v`
-            - for each unmarked vertex pointing from `v`:
-            add to queue and mark it as visited.
+        1) Put sources onto a FIFO queue and mark them as visited.
+        2) Repeat until the queue is empty:
+                - remove the least recently added vertex `v`
+                - for each unmarked vertex pointing from `v`:
+                add to queue and mark it as visited.
         """
         # FIFO qeeue
         q = []
 
-        for s in sources:
+        for s in self._S:
             q.append(s)
-            self._marked[s]  = True
+            self._marked [s] = True
             self._dist_to[s] = 0
 
         while q: # until the queue is empty
@@ -91,14 +91,6 @@ class DigraphBFP:
             shortest_path.append(w)
 
         return shortest_path[::-1]
-
-    @property
-    def count(self) -> int:
-        """Returns number of vertices with an incoming
-        path from source `s`.
-        Considers the source itself."""
-        return self._marked.count(DigraphBFP.CONNECTED)
-    
 
 # ------------------------------------------------------------------------------
 # --- UNIT TESTS

@@ -1,0 +1,3 @@
+0,a_specific_noun another_specific_noun,any_gloss
+1,a_general_noun another_general_noun,any_gloss
+2,a_more_general_noun,any_gloss

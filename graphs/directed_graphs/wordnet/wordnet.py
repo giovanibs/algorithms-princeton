@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Iterable
-
+import colored_traceback.auto
 
 class WordNet:
     """
@@ -35,7 +35,7 @@ class WordNet:
         or sap() is not a WordNet noun. 
 
     """
-
+    NOT_A_STRING = "Noun must be a string."
 
     def __init__(
             self,
@@ -121,6 +121,25 @@ class WordNet:
                 hypernyms.append(hypernym)
         return hypernyms
 
+    @classmethod
+    def _validate_noun(self, noun):
+        if not isinstance(noun, str):
+            raise TypeError(WordNet.NOT_A_STRING)
+
+    # ---------------------------------
+    # --- HELPERS
+    def _id_of(self, noun: str) -> int|None:
+        self._validate_noun(noun)
+
+        if not self.is_noun(noun): return None
+        
+        return [id for id, synset in self._synsets.items() if noun in synset][0]
+    
+    def _connected_to(self, synset_id):
+        connected_synsets = self.hyper_of(synset_id) \
+                                .union(self.hypo_of(synset_id))
+                            
+        return connected_synsets
 
     # ---------------------------------
     # PUBLIC API
@@ -143,7 +162,7 @@ class WordNet:
     def hypo_of(self, synset_id: int) -> set[int]:
         return self._hyponyms.get(synset_id) or set()
 
-    def distance(self, nounA, nounB):
+    def distance(self, noun_a: str, noun_b: str):
         """
         Measuring the semantic relatedness of two nouns:
         Semantic relatedness refers to the degree to which
@@ -152,7 +171,7 @@ class WordNet:
         Returns the length of shortest ancestral path of subsets A and B.
         """
     
-    def sap(self, noun_a: str, noun_b: str):
+    def sap(self, noun_a: str, noun_b: str) -> tuple[list[int], int, str]:
         """
         Measuring the semantic relatedness of two nouns:
         Semantic relatedness refers to the degree to which
@@ -161,72 +180,93 @@ class WordNet:
         Returns the path and length of shortest
         ancestral path of `noun_a` and `noun_b`.
         """
-        # get synset_id of noun_a and noun_b
-        a, = [
-            id for id, synset in self._synsets.items() if noun_a in synset
-        ]
-        b, = [
-            id for id, synset in self._synsets.items() if noun_b in synset
-        ]
+        self._validate_noun(noun_a)
+        self._validate_noun(noun_b)
+
+        # get synset_id of noun_a and noun_b, they could be different nouns,
+        # but synonyms (i.e. part of the same synset.)
+        a = self._id_of(noun_a)
+        b = self._id_of(noun_b)
+
+        if a == b:
+            return [a], 0, a
         
-        # start bfs from `noun_a`, but disconsider its hyponyms
-        hyper_of_a = self.hyper_of(a)
-        hypernyms_b = self.hyper_of(b)
-        
-        
+        # -------------------------- #
         # --- SET UP FOR THE BFS --- #
-        
+
         q = [a]              # let's start a FIFO queue with `a` (could be `b`)
         visited = {a: False} # and  keep track of the visited synsets.
-        dist_to = {a: 0}     # The distance from `a` to `a` is zero.
-        edge_to = {a: a}     # The edge_to `a` is itself. Or should it be None?
+        dist_to = {a: 0}     # The distance from `a` to itself is zero.
+        edge_to = {a: a}     # The edge_to `a` is itself.
         
+        # ----------- #
+        # --- BFS --- #
+
         while True:
-            synset = q.pop(0) # first round it is `a` (or `b`)
+            synset = q.pop(0) # first round it is `a`
             
             # let's mark the `synset` as visited
             visited[synset] = True
 
-            # if, by any chance, the `synset` if a hypernym of `b`
+            # we're gonna run an UNDIRECTED search, so BOTH hypernyms AND
+            # hyponyms of `synset` are modeled as (undirectly) connected:
+            connected_synsets = self._connected_to(synset)
+
+            # if, by any chance, `b` is connected to `synset`,
             # we're done: we found the last synset to `b` so...
-            if b in self.hypo_of(synset):
-                edge_to[b] = synset               # let's put it as edge_to `b`,
+            if b in connected_synsets:
+                edge_to[b] = synset              # let's put it as edge_to `b`,
                 dist_to[b] = dist_to[synset] + 1 # update its dist_to `a` and
                 
-                break # finally go to the next phase: II! BUT BEFORE THAT...
+                break # search is done.
 
-            # ... WHILE `the statement above is not satisfied`, we gotta keep
-            # searching in the digraph with UNDIRECTED search: BOTH HYPERNYMS
-            # and HYPONYMS of `synset` are modeled as (undirectly) connected:
-            connected_synsets = self.hyper_of(synset) \
-                        .union(self.hypo_of(synset) if synset == a else set() 
-            ) # the ternary statement above discards the hyponyms of `a`
-            
             # Now, let's put every connected synset `cs` in the queue...
             for cs in connected_synsets:
-                # ... except for those already in the queue/visited in the loop
+                # ...except for those already in the queue / visited in the loop
                 if cs not in q and cs not in visited:
                     q.append(cs)
                     visited[cs] = True                  # mark it as visited
                     edge_to[cs] = synset                # undirected edge!!!
                     dist_to[cs] = dist_to[synset] + 1   # `previous dist.` + 1
         
-        # WELCOME TO PHASE II. NOT QUITE AS LONG AS PHASE I, HUH!?
-
+        
+        # ----------- #
+        # --- SAP --- #
+        
         # Since we found a UNDIRECT path from `a` to `b`, let's trace back
         # each synset `s` starting from `b` by making use of the `edge_to`:
-        shortest_path = [b]
+        sap    = [b]
         synset = b
-
+        sca    = None
+        
         # So, while we don't get back to `a`...
         while True:
-            synset = edge_to[synset]        # we keep following the path
-            shortest_path.append(synset)    # and recording the shortest path
-            if synset == a:                 # until `a` (included).
-                break
+            synset = edge_to[synset]     # we keep following the path
+            sap.append(synset)           # and recording it.
 
-        # FINALLY, we return the shortest_path AND the distance from `a` to `b`
-        return shortest_path, dist_to[b]
+            if synset == a:
+                break
+        
+        # -------------------------------- #
+        # --- Shortest Common Ancestor --- #
+        sca = self._sca(sap)         
+
+        # FINALLY, we return the sap AND the distance from `a` to `b`
+        return sap, dist_to[b], sca
+    
+    def _sca(self, sap: iter) -> int:
+        """
+        Let's go through the sap until we reach the highest
+        hypernym on the `sap`, that is either:
+            - the synset whose successor is one of its hyponyms;
+            - OR the last synset on the path.
+        """
+        for i, synset in enumerate(sap):
+            is_last = i == len(sap)-1
+
+            if is_last or sap[i+1] in self.hypo_of(synset):
+                # keep sap[i+1] after is_last to prevent index overflow
+                return synset
 
 # ------------------------------------------------------------------------------
 # --- UNIT TESTS
@@ -338,23 +378,90 @@ class TestsPublicAPI(unittest.TestCase):
         self.assertSetEqual(self.wn.hypo_of(2), {1, 3, 0})
         self.assertSetEqual(self.wn.hypo_of(3), EMPTY_SET)
 
-    def test_004_sap(self):
-        self.wn._hypernyms[3] = {2}
-        self.wn._hypernyms[0] = {1}
-        self.wn._set_hyponyms(self.wn._hypernyms, self.wn._hyponyms)
-        result = self.wn.sap("a_specific_noun", "whatever")[0]
-        expected = [3,2,1,0]
-        self.assertListEqual(result, expected )
+
+class TestsSAP(unittest.TestCase):
+    class WordNetDouble(WordNet):
+        def __init__(self):
+            self._synsets      = None
+            self._hypernyms    = None
+            self._hyponyms     = dict()
+            self._synset_count = None
 
 
+    def setUp(self):
+        wn = self.wn = self.WordNetDouble()
+        n  = self.n  = 10
+        
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}    ,
+            2: {0}    ,
+            3: {1, 5} ,
+            4: {1}    ,
+            5: {1, 2} ,
+            6: {2, 0} ,
+            7: {5}    ,
+            8: {6}    ,
+            9: {8, 0} ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+    
 
+    def test_000__validation(self):
+        with self.assertRaisesRegex(TypeError, WordNet.NOT_A_STRING):
+            self.wn.sap(1, "0")
+            self.wn.sap("1", 0)
+            self.wn.sap("1", "0")
+    
+
+    def test_001__reflexive_sap(self):
+        print("test_001__reflexive_sap")
+        wn = self.wn
+        
+        for noun in range(self.n):
+            output = wn.sap(str(noun), str(noun))
+            target = [noun], 0, noun
+            self.assertTupleEqual(output, target)
+    
+
+    def test_002__sap__from_hyper_to_hyponym(self):
+        output = self.wn.sap('1', '4')
+        target = [4, 1], 1, 1
+        self.assertTupleEqual(output, target)
+    
+
+    def test_003__sap__from_hypo_to_hypernym(self):
+        output = self.wn.sap('4', '1')
+        target = ( path:=[1, 4], len(path)-1, 1 )
+        self.assertTupleEqual(output, target)
+        
+    
+    def test_004__sap__shortest_of_two(self):
+        output = self.wn.sap('5', '9')
+        target = ( path:=[9, 0, 1, 5], len(path)-1, 0)
+        # longer:        [9, 8, 6, 2, 5]
+        self.assertTupleEqual(output, target)
+    
+        output = self.wn.sap('9', '2')
+        target = ( path:=[2, 0, 9], len(path)-1, 0)
+        # longer:        [2, 6, 8, 9]
+        self.assertTupleEqual(output, target)
+    
+    def test_005__sap__two_shortest(self):
+        output = self.wn.sap('4', '8')
+        targets = (
+             (path:=[8, 9, 0, 1, 4], len(path)-1, 0),
+             (path:=[8, 6, 0, 1, 4], len(path)-1, 0),
+        )
+        
+        output = self.wn.sap('8', '4')
+        targets = (
+             (path:=[4, 1, 0, 9, 8], len(path)-1, 0),
+             (path:=[4, 1, 0, 6, 8], len(path)-1, 0),
+        )
+        self.assertIn(output, targets)
+        
 # if __name__ == "__main__":
-#     synsets = [
-#             (0, {"a_specific_noun", "another_specific_noun"}),
-#             (1, {"a_general_noun" , "another_general_noun"}),
-#             (2, {"THE_Root"}),
-#             (3, {"whatever"}),
-#         ]
-#     noun_a = "whatever"
-#     print([id for id, synset in synsets if noun_a in synset])
-
+#     ...

@@ -282,7 +282,7 @@ class WordNet:
                 # keep sap[i+1] after is_last to prevent index overflow
                 return synset
 
-    def outcast(self) -> list[int]:
+    def outcast(self, nouns: list[str]|None = None) -> list[int]:
         """
         To identify an outcast, compute the sum of the distances
         between each noun and every other one and return a noun
@@ -292,25 +292,39 @@ class WordNet:
 
             - run `_bfs` for a noun and every other one.
         """
-        if self._synset_count == 1:
+        
+        if nouns is None:
+            synsets = self._synsets.keys()
+        else:
+            synsets = self._validate_nouns(nouns)
+
+        if len(synsets) == 1:
             return next(iter(self._synsets))
         
-        dist_sum: dict[int, int] = {synset: 0 for synset in self._synsets}
+        dist_sum: dict[int, int] = {synset: 0 for synset in synsets}
 
-        # iterate over all combinations of 2 synsets
-        for source_id in self._synsets:
-            for other_id in self._synsets:
+        # get the distances from every given noun (or all nouns
+        # if None is given) to every other synset other synset.
+        for source in synsets:
+            for other in self._synsets:
 
-                # get the distances from source_id to every other
-                # synset from source to the other synset.
-                dist_to = self._bfs(source_id, other_id)[0]
-
+                dist_to = self._bfs(source, other)[0]
                 # save the sum of all distances
-                dist_sum[source_id] += sum(dist_to.values())
-        
-        print(dist_sum)
+                dist_sum[source] += sum(dist_to.values())
         
         return max(dist_sum, key= lambda x: dist_sum[x])
+
+    def _validate_nouns(self, nouns):
+        synsets_ids = set()
+
+        for noun in nouns:
+            
+            if not self.is_noun(noun):
+                raise ValueError(f"{noun!r} is not in the WordNet.")
+            
+            synsets_ids.add(self._id_of(noun))
+
+        return synsets_ids
 
             
     def _dfs(self,
@@ -529,10 +543,20 @@ class TestsOutcast(unittest.TestCase):
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
 
-        # --- assert
+        # --- assert by id
         actual = wn.outcast()
         target = 0
         self.assertEqual(actual, target)
+    
+        # --- by noun
+        # assert by noun
+        nouns = set()
+        for noun_set in wn._synsets.values():
+            nouns.add(list(noun_set)[0])
+            
+        actual = wn.outcast(nouns)
+        target = 0, 1
+        self.assertIn(actual, target)
     
     def test_001__outcast__of_two_synsets(self):
         wn = TestsOutcast.WordNetDouble()
@@ -545,7 +569,17 @@ class TestsOutcast(unittest.TestCase):
             1: {0}     ,
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        
         actual = wn.outcast()
+        target = 0, 1
+        self.assertIn(actual, target)
+
+        # assert by noun
+        nouns = set()
+        for noun_set in wn._synsets.values():
+            nouns.add(list(noun_set)[0])
+
+        actual = wn.outcast(nouns)
         target = 0, 1
         self.assertIn(actual, target)
     
@@ -561,9 +595,24 @@ class TestsOutcast(unittest.TestCase):
             2: {1}     ,
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        
         actual = wn.outcast()
         target = 0, 2
         self.assertIn(actual, target)
+
+        # assert by noun
+        nouns = {'0', '1'}
+            
+        actual = wn.outcast(nouns)
+        target = 0
+        self.assertEqual(actual, target)
+    
+        # assert by noun
+        nouns = {'2', '1'}
+            
+        actual = wn.outcast(nouns)
+        target = 2
+        self.assertEqual(actual, target)
     
     def test_003__outcast__of_three_synsets_in_a_binary_tree(self):
         wn = TestsOutcast.WordNetDouble()
@@ -577,7 +626,29 @@ class TestsOutcast(unittest.TestCase):
             2: {0}     ,
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+
         actual = wn.outcast()
+        target = 1, 2
+        self.assertIn(actual, target)
+
+        # assert by noun
+        nouns = {'0', '1'}
+            
+        actual = wn.outcast(nouns)
+        target = 1
+        self.assertEqual(actual, target)
+    
+        # assert by noun
+        nouns = {'0', '2'}
+            
+        actual = wn.outcast(nouns)
+        target = 2
+        self.assertEqual(actual, target)
+    
+        # assert by noun
+        nouns = {'2', '1'}
+            
+        actual = wn.outcast(nouns)
         target = 1, 2
         self.assertIn(actual, target)
 
@@ -595,8 +666,23 @@ class TestsOutcast(unittest.TestCase):
             4: {1}     ,
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+
         actual = wn.outcast()
         target = 2
+        self.assertEqual(actual, target)
+
+        # assert by noun
+        nouns = {'1', '4'}
+            
+        actual = wn.outcast(nouns)
+        target = 4
+        self.assertEqual(actual, target)
+    
+        # assert by noun
+        nouns = {'0', '1'}
+            
+        actual = wn.outcast(nouns)
+        target = 0
         self.assertEqual(actual, target)
 
     def test_005__outcast(self):
@@ -620,10 +706,58 @@ class TestsOutcast(unittest.TestCase):
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
     
+        """distance sum
+        {   
+            0: 55,
+            1: 55,
+            2: 65,
+            3: 76,
+            4: 85,
+            5: 61,
+            6: 69,
+            7: 93,
+            8: 93,
+            9: 76
+        }
+        """
 
+        # outcast from all
         actual = wn.outcast()
-        target = [7, 8]
+        target = [7,
+        8]
         self.assertIn(actual, target)
 
-# if __name__ == "__main__":
-#     ...
+        # outcast by nouns
+        nouns = {'9', '4', '3'}
+            
+        actual = wn.outcast(nouns)
+        target = 4
+        self.assertEqual(actual, target)
+    
+        # assert by noun
+        nouns = {'0', '1', '2'}
+            
+        actual = wn.outcast(nouns)
+        target = 2
+        self.assertEqual(actual, target)
+        
+        # assert by noun
+        nouns = {'5', '6', '2'}
+            
+        actual = wn.outcast(nouns)
+        target = 6
+        self.assertEqual(actual, target)
+        
+        # assert by noun
+        nouns = {'7', '9'}
+            
+        actual = wn.outcast(nouns)
+        target = 7
+        self.assertEqual(actual, target)
+
+
+
+if __name__ == "__main__":
+    ...
+    synset_path = "examples/synsets.txt"
+    hypernyms_path = "examples/hypernymss.txt"

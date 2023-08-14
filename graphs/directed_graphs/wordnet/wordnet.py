@@ -1,6 +1,7 @@
+import colored_traceback.auto
 from pathlib import Path
 from typing import Iterable
-import colored_traceback.auto
+from collections import deque
 
 class WordNet:
     """
@@ -99,7 +100,7 @@ class WordNet:
         with open(synsets_path) as f:
             for line in f:
                     # read from line
-                synset_id, synonyms, _ = line.strip().split(',')
+                synset_id, synonyms, *_ = line.strip().split(',')
                     # cast to appropriate type
                 synset = int(synset_id), set(synonyms.split())
                 synsets.append(synset)
@@ -128,12 +129,13 @@ class WordNet:
 
     # ---------------------------------
     # --- HELPERS
-    def _id_of(self, noun: str) -> int|None:
+    def _id_of(self, noun: str, first: bool = True) -> int|None:
         self._validate_noun(noun)
 
         if not self.is_noun(noun): return None
+        ids = [id for id, synset in self._synsets.items() if noun in synset]
         
-        return [id for id, synset in self._synsets.items() if noun in synset][0]
+        return ids[0] if first else ids
     
     def _connected_to(self, synset_id):
         connected_synsets = self.hyper_of(synset_id) \
@@ -219,17 +221,17 @@ class WordNet:
         # FINALLY, we return the sap AND the distance from `a` to `b`
         return sap, dist_to[b], sca
 
-    def _bfs(self, a: int, b: int):
+    def _bfs(self, a: int, b: int|None = None):
 
-        q = [a]              # let's start a FIFO queue with `a` (could be `b`)
+        q = deque([a])              # let's start a FIFO queue with `a` (could be `b`)
         visited = {a: False} # and  keep track of the visited synsets.
         dist_to = {a: 0}     # The distance from `a` to itself is zero.
         edge_to = {a: a}     # The edge_to `a` is itself.
         
 
         # --- NON-RECURSIVE
-        while True:
-            synset = q.pop(0) # first round it is `a`
+        while q:
+            synset = q.popleft() # first round it is `a`
             
             # let's mark the `synset` as visited
             visited[synset] = True
@@ -240,16 +242,16 @@ class WordNet:
 
             # if, by any chance, `b` is connected to `synset`,
             # we're done: we found the last synset to `b` so...
-            if b in connected_synsets:
+            if b and b in connected_synsets:
                 edge_to[b] = synset              # let's put it as edge_to `b`,
-                dist_to[b] = dist_to[synset] + 1 # update its dist_to `a` and
+                dist_to[b] = dist_to[synset] + 1 # update its dist_to `a`
                 
                 break # search is done.
 
             # Now, let's put every connected synset `cs` in the queue...
             for cs in connected_synsets:
                 # ...except for those already in the queue / visited in the loop
-                if cs not in q and cs not in visited:
+                if cs not in q and not visited.get(cs, False):
                     q.append(cs)
                     visited[cs] = True                  # mark it as visited
                     edge_to[cs] = synset                # undirected edge!!!
@@ -293,28 +295,25 @@ class WordNet:
             - run `_bfs` for a noun and every other one.
         """
         
-        if nouns is None:
-            synsets = self._synsets.keys()
-        else:
-            synsets = self._validate_nouns(nouns)
+        synsets = self._validate_nouns(nouns)
 
         if len(synsets) == 1:
             return next(iter(self._synsets))
         
-        dist_sum: dict[int, int] = {synset: 0 for synset in synsets}
+        distances: dict[int, int] = {}
 
         # get the distances from every given noun (or all nouns
-        # if None is given) to every other synset other synset.
-        for source in synsets:
-            for other in self._synsets:
+        # if None is given) to every other synset.
+        for synset in synsets:
+            dist_to = self._bfs(synset)[0]
+            distances[synset] = sum(dist_to.values())
 
-                dist_to = self._bfs(source, other)[0]
-                # save the sum of all distances
-                dist_sum[source] += sum(dist_to.values())
-        
-        return max(dist_sum, key= lambda x: dist_sum[x])
+        return max(distances.items(), key=max)[0]
 
     def _validate_nouns(self, nouns):
+        if nouns is None:
+            return self._synsets.keys()
+        
         synsets_ids = set()
 
         for noun in nouns:
@@ -322,7 +321,7 @@ class WordNet:
             if not self.is_noun(noun):
                 raise ValueError(f"{noun!r} is not in the WordNet.")
             
-            synsets_ids.add(self._id_of(noun))
+            synsets_ids.update(self._id_of(noun, first = False))
 
         return synsets_ids
 
@@ -758,6 +757,16 @@ class TestsOutcast(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    ...
-    synset_path = "examples/synsets.txt"
-    hypernyms_path = "examples/hypernymss.txt"
+    from timeit import timeit
+    from os import path
+
+    root           = path.dirname(path.abspath(__file__))
+    synset_path    = path.join(root, r"examples/synsets10000-subgraph.txt"  )
+    hypernyms_path = path.join(root, r"examples/hypernyms10000-subgraph.txt")
+    
+    wn = WordNet(synset_path, hypernyms_path)
+    
+    outcast_nouns = ['apple', 'banana']
+    n = 10
+    average_time = timeit(lambda: wn.outcast(outcast_nouns), number=n)/n
+    print(f"Average time per execution: {average_time} seconds")

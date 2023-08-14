@@ -171,7 +171,11 @@ class WordNet:
         Returns the length of shortest ancestral path of subsets A and B.
         """
     
-    def sap(self, noun_a: str, noun_b: str) -> tuple[list[int], int, str]:
+    def sap(
+            self,
+            noun_a: str|set[str],
+            noun_b: str|set[str] 
+        ) -> tuple[list[int], int, str]:
         """
         Measuring the semantic relatedness of two nouns:
         Semantic relatedness refers to the degree to which
@@ -180,6 +184,13 @@ class WordNet:
         Returns the path and length of shortest
         ancestral path of `noun_a` and `noun_b`.
         """
+        if isinstance(noun_a, set):
+            noun_a = noun_a.pop() # get any noun from the set
+        
+        if isinstance(noun_b, set):
+            noun_b = noun_b.pop() # get any noun from the set
+        
+        
         self._validate_noun(noun_a)
         self._validate_noun(noun_b)
 
@@ -191,17 +202,32 @@ class WordNet:
         if a == b:
             return [a], 0, a
         
-        # -------------------------- #
-        # --- SET UP FOR THE BFS --- #
+        
+        dist_to, edge_to, visited = self._bfs(a, b)
+        
+        # ----------- #
+        # --- SAP --- #
+        # Since we found a UNDIRECT path from `a` to `b`, let's trace back
+        # each synset `s` starting from `b` by making use of the `edge_to`:
+        sap = self._traceback_path(a, b, edge_to)
+        
+        # -------------------------------- #
+        # --- Shortest Common Ancestor --- #
+        sca    = None
+        sca = self._sca(sap)         
+
+        # FINALLY, we return the sap AND the distance from `a` to `b`
+        return sap, dist_to[b], sca
+
+    def _bfs(self, a: int, b: int):
 
         q = [a]              # let's start a FIFO queue with `a` (could be `b`)
         visited = {a: False} # and  keep track of the visited synsets.
         dist_to = {a: 0}     # The distance from `a` to itself is zero.
         edge_to = {a: a}     # The edge_to `a` is itself.
         
-        # ----------- #
-        # --- BFS --- #
 
+        # --- NON-RECURSIVE
         while True:
             synset = q.pop(0) # first round it is `a`
             
@@ -228,31 +254,19 @@ class WordNet:
                     visited[cs] = True                  # mark it as visited
                     edge_to[cs] = synset                # undirected edge!!!
                     dist_to[cs] = dist_to[synset] + 1   # `previous dist.` + 1
-        
-        
-        # ----------- #
-        # --- SAP --- #
-        
-        # Since we found a UNDIRECT path from `a` to `b`, let's trace back
-        # each synset `s` starting from `b` by making use of the `edge_to`:
+
+        return dist_to, edge_to, visited
+
+    def _traceback_path(self, a: int, b: int, edge_to: dict[int, int]):
         sap    = [b]
         synset = b
-        sca    = None
-        
-        # So, while we don't get back to `a`...
         while True:
             synset = edge_to[synset]     # we keep following the path
             sap.append(synset)           # and recording it.
 
             if synset == a:
                 break
-        
-        # -------------------------------- #
-        # --- Shortest Common Ancestor --- #
-        sca = self._sca(sap)         
-
-        # FINALLY, we return the sap AND the distance from `a` to `b`
-        return sap, dist_to[b], sca
+        return sap
     
     def _sca(self, sap: iter) -> int:
         """
@@ -267,6 +281,49 @@ class WordNet:
             if is_last or sap[i+1] in self.hypo_of(synset):
                 # keep sap[i+1] after is_last to prevent index overflow
                 return synset
+
+    def outcast(self) -> list[int]:
+        """
+        To identify an outcast, compute the sum of the distances
+        between each noun and every other one and return a noun
+        (or nouns) for which the distance is maximum.
+
+        ### Brute force implementation
+
+            - run `_bfs` for a noun and every other one.
+        """
+        if self._synset_count == 1:
+            return next(iter(self._synsets))
+        
+        dist_sum: dict[int, int] = {synset: 0 for synset in self._synsets}
+
+        # iterate over all combinations of 2 synsets
+        for source_id in self._synsets:
+            for other_id in self._synsets:
+
+                # get the distances from source_id to every other
+                # synset from source to the other synset.
+                dist_to = self._bfs(source_id, other_id)[0]
+
+                # save the sum of all distances
+                dist_sum[source_id] += sum(dist_to.values())
+        
+        print(dist_sum)
+        
+        return max(dist_sum, key= lambda x: dist_sum[x])
+
+            
+    def _dfs(self,
+             _id:      int,
+             stack:   list[int],
+             visited: dict[int, bool]) -> list:
+        
+        for synset_id in self.hyper_of(_id):
+            if not visited[synset_id]:
+                stack.append(self._dfs(synset_id, stack, visited))
+
+        return _id
+
 
 # ------------------------------------------------------------------------------
 # --- UNIT TESTS
@@ -380,13 +437,7 @@ class TestsPublicAPI(unittest.TestCase):
 
 
 class TestsSAP(unittest.TestCase):
-    class WordNetDouble(WordNet):
-        def __init__(self):
-            self._synsets      = None
-            self._hypernyms    = None
-            self._hyponyms     = dict()
-            self._synset_count = None
-
+    WordNetDouble = TestsPublicAPI.WordNetDouble
 
     def setUp(self):
         wn = self.wn = self.WordNetDouble()
@@ -417,7 +468,6 @@ class TestsSAP(unittest.TestCase):
     
 
     def test_001__reflexive_sap(self):
-        print("test_001__reflexive_sap")
         wn = self.wn
         
         for noun in range(self.n):
@@ -463,5 +513,117 @@ class TestsSAP(unittest.TestCase):
         )
         self.assertIn(output, targets)
         
+
+class TestsOutcast(unittest.TestCase):
+    WordNetDouble = TestsPublicAPI.WordNetDouble
+
+    def test_000__outcast__reflexive(self):
+        # --- set up
+        wn = TestsOutcast.WordNetDouble()
+        n = 1
+        wn._synset_count = n
+        
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        wn._hypernyms = {
+            0: {}     ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+
+        # --- assert
+        actual = wn.outcast()
+        target = 0
+        self.assertEqual(actual, target)
+    
+    def test_001__outcast__of_two_synsets(self):
+        wn = TestsOutcast.WordNetDouble()
+        n = 2
+        wn._synset_count = n
+
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}     ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        actual = wn.outcast()
+        target = 0, 1
+        self.assertIn(actual, target)
+    
+    def test_002__outcast__of_three_synsets_in_a_sequence(self):
+        wn = TestsOutcast.WordNetDouble()
+        n = 3
+        wn._synset_count = n
+
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}     ,
+            2: {1}     ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        actual = wn.outcast()
+        target = 0, 2
+        self.assertIn(actual, target)
+    
+    def test_003__outcast__of_three_synsets_in_a_binary_tree(self):
+        wn = TestsOutcast.WordNetDouble()
+        n = 3
+        wn._synset_count = n
+
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}     ,
+            2: {0}     ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        actual = wn.outcast()
+        target = 1, 2
+        self.assertIn(actual, target)
+
+    def test_004__outcast__one_specific_outcast(self):
+        wn = TestsOutcast.WordNetDouble()
+        n = 5
+        wn._synset_count = n
+
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}     ,
+            2: {0}     ,
+            3: {1}     ,
+            4: {1}     ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+        actual = wn.outcast()
+        target = 2
+        self.assertEqual(actual, target)
+
+    def test_005__outcast(self):
+        wn = self.WordNetDouble()
+        n  = 10
+        wn._synset_count = n
+        
+        wn._synsets = { id: {str(id)} for id in range(n) }
+        
+        wn._hypernyms = {
+            0: {}     ,
+            1: {0}    ,
+            2: {0}    ,
+            3: {1, 5} ,
+            4: {1}    ,
+            5: {1, 2} ,
+            6: {2, 0} ,
+            7: {5}    ,
+            8: {6}    ,
+            9: {8, 0} ,
+        }
+        wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
+    
+
+        actual = wn.outcast()
+        target = [7, 8]
+        self.assertIn(actual, target)
+
 # if __name__ == "__main__":
 #     ...

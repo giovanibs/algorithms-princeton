@@ -135,11 +135,13 @@ class SAP:
             # Now, let's put every connected synset `cs` in the queue...
             for cs in connected_synsets:
                 # ...except for those already in the queue / visited in the loop
-                if cs not in q and not self._visited.get(cs, False):
-                    q.append(cs)
-                    self._visited[cs] = True
-                    self._edge_to[cs] = synset
-                    self._dist_to[cs] = self._dist_to[synset] + 1
+                if cs in q or self._visited.get(cs, False):
+                    continue
+                    
+                q.append(cs)
+                self._visited[cs] = True
+                self._edge_to[cs] = synset
+                self._dist_to[cs] = self._dist_to[synset] + 1
 
        
 

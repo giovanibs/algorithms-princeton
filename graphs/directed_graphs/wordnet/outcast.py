@@ -1,75 +1,108 @@
-from wordnet import WordNet, TestsInitWordNet, TestsPublicAPI
+from wordnet import WordNet
 from collections import deque
+from sap import SAP
+
 
 class Outcast:
 
     def __init__(self, wn: WordNet) -> None:
         self._wn = wn
         self._visited: dict
-        self._dist_to: dict
-        self._edge_to: dict
+        self._dist_from_to: dict[int, dict[int, int]]
+        
+        #   _dist_from_to = {
+        #                   from: {
+        #                       { to_0: distance_0 },
+        #                       { to_1: distance_1 }
+        #                   }
+        #   }
         
 
-    def outcast(self, nouns: list[str]|None = None) -> list[int]:
+    def outcast(self, nouns: iter[str]|None = None) -> list[int]:
         """
         To identify an outcast, compute the sum of the distances
         between each noun and every other one and return a noun
         (or nouns) for which the distance is maximum.
 
-        ### Brute force implementation
+        ### TOPOLOGICAL-FIRST APPROACH:
 
-            - run `_bfs` for a noun and every other one.
-        """
-        synsets = self._validate_nouns(nouns)
+        Specialized algorithm for identifying THE outcast of a graph.
 
-        if len(synsets) == 1:
-            return next(iter(self._wn._synsets))
-        
-        distances: dict[int, int] = {}
+        The assumption for this algorithm is that the outcast must
+        be a hypernym from the top of the topologically sorted graph
+        or a pure hyponym at its bottom. 
 
-        # get the distances from every given noun (or all nouns
-        # if None is given) to every other synset.
-        
-        for synset in synsets:
-            self._bfs(synset)
-            distances[synset] = sum(self._dist_to.values())
+        Based on assumption, the time complexity is reduced since we
+        are not checking the all of the synsets for its distances to
+        other synsets.
 
-        return max(distances.items(), key=max)[0]
+        The topological order is the reversed post-order of a graph.
+        Alternatively, we could use the normal postorder of a graph
+        as well, but taking the hypernyms from its bottom and the
+        hyponyms from its top.
 
+        Steps:
 
-    def _bfs(self, a: int, b: int|None = None):
-
-        q = deque([a])       # let's start a FIFO queue with `a` (could be `b`)
-      
-        # initiate dicts
-        self._visited = {a: False}
-        self._dist_to = {a: 0}
-        self._edge_to = {a: a}
-
-        while q:
-            synset = q.popleft()
+        1) Preparing the topological order:
+            - run `dfs` for any noun and return its postorder
             
-            self._visited[synset] = True
+        2) Picking candidates
+            - iterate from the top of the topological order and enqueue
+            each synset until you find the first hyponym;
+            - iterate from the bottom enqueue each synset until you find
+            the first hypernym;
 
-            connected_synsets = self._wn._connected_to(synset)
+        3) Calculate the SAP from each candidate to every other synset.
 
-            if b and b in connected_synsets:
-                self._edge_to[b] = synset
-                self._dist_to[b] = self._dist_to[synset] + 1
-                
-                break # search is done.
+        4) Get the synset from canditates that have the largest distance.
+        """
+        
+        
 
-            # Now, let's put every connected synset `cs` in the queue...
-            for cs in connected_synsets:
-                # ...except for those already in the queue / visited in the loop
-                if cs not in q and not self._visited.get(cs, False):
-                    q.append(cs)
-                    self._visited[cs] = True
-                    self._edge_to[cs] = synset
-                    self._dist_to[cs] = self._dist_to[synset] + 1
+    def _bfs(self, q: deque, previous_dist: int = 0):
+        """
+        """
 
+        s = q.popleft()
+        self._dist_from_to[s] = { s: previous_dist }
+        self._visited[s] = True
+        
+        connected_synsets = self._wn._connected_to(s)
+
+        for cs in connected_synsets:
+            
+            if cs in q or self._visited.get(cs, False):
+                continue
+
+            q.append(cs)
+            self._visited[cs] = True
+
+            dist = previous_dist + 1
+            self._dist_from_to[s][cs] = dist
+            self._dist_from_to[cs] = {  cs: 0    ,  # initiate
+                                        s : dist }  # save reflexive dist
+            
+        
+        previous_dist += 1
+    
 
     def _validate_nouns(self, nouns):
+        # ========== OLD ============
+        # if nouns is None:
+        #     return self._wn._synsets.keys()
+        
+        # synsets_ids = set()
+
+        # for noun in nouns:
+            
+        #     if not self._wn.is_noun(noun):
+        #         raise ValueError(f"{noun!r} is not in the WordNet.")
+            
+        #     synsets_ids.update(self._wn._id_of(noun, first = False))
+
+        # return synsets_ids
+        # ========== END OLD ============
+        
         if nouns is None:
             return self._wn._synsets.keys()
         
@@ -83,7 +116,7 @@ class Outcast:
             synsets_ids.update(self._wn._id_of(noun, first = False))
 
         return synsets_ids
-
+    
 
 # ------------------------------------------------------------------------------
 # --- UNIT TESTS

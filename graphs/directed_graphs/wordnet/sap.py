@@ -42,8 +42,8 @@ class SAP:
     # --- PUBLIC API
     def sap(
             self,
-            noun_a: str|set[str],
-            noun_b: str|set[str] 
+            noun_a: str|set[str]|int,
+            noun_b: str|set[str]|int 
         ) -> tuple[list[int], int, str]:
         """
         Measuring the semantic relatedness of two nouns:
@@ -53,20 +53,12 @@ class SAP:
         Returns the path and length of shortest
         ancestral path of `noun_a` and `noun_b`.
         """
-        if isinstance(noun_a, set):
-            noun_a = noun_a.pop() # get any noun from the set
         
-        if isinstance(noun_b, set):
-            noun_b = noun_b.pop() # get any noun from the set
+        a = self._validate(noun_a) if not isinstance(noun_a, int) else noun_a
+        b = self._validate(noun_b) if not isinstance(noun_b, int) else noun_b
         
-        
-        self._wn._validate_noun(noun_a)
-        self._wn._validate_noun(noun_b)
-
-        # get synset_id of noun_a and noun_b, they could be different nouns,
-        # but synonyms (i.e. part of the same synset.)
-        a = self._wn._id_of(noun_a)
-        b = self._wn._id_of(noun_b)
+        if not isinstance(noun_b, int):
+            b = self._validate(noun_b)
 
         if a == b:
             return [a], 0, a
@@ -87,6 +79,18 @@ class SAP:
 
         # FINALLY, we return the sap AND the distance from `a` to `b`
         return sap, self._dist_to[b], sca
+
+
+    def _validate(self, noun):
+        if isinstance(noun, set):
+            noun = noun.pop() # get any noun from the set
+        
+        self._wn._validate_noun(noun)
+
+        # get synset_id of noun and noun_b, they could be different nouns,
+        # but synonyms (i.e. part of the same synset.)
+        _id = self._wn._id_of(noun)
+        return _id
 
 
     def _traceback_path(self, *, from_: int, to_: int):
@@ -193,13 +197,6 @@ class TestsSAP(unittest.TestCase):
         }
         wn._set_hyponyms(wn._hypernyms, wn._hyponyms)
         self.sap = SAP(wn)
-
-    def test_000__validation(self):
-        with self.assertRaisesRegex(TypeError, WordNet.NOT_A_STRING):
-            self.sap.sap(1, "0")
-            self.sap.sap("1", 0)
-            self.sap.sap("1", "0")
-    
 
     def test_001__reflexive_sap(self):
         sap = self.sap

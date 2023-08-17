@@ -11,7 +11,7 @@ class Outcast:
         self._visited: dict = dict()
 
 
-    def outcast(self, nouns: Iterable[str]|None = None) -> list[int]:
+    def outcast(self, nouns: Iterable[str]|None = None) -> set[int]:
         """
         Returns  a list containing synsets for which the total
         distance to all other synsets is highest among the
@@ -53,16 +53,25 @@ class Outcast:
         """
         
         if nouns is None:
-            candidates = self._pure_hypernyms() | self._pure_hyponyms() 
-            return self.outcast(candidates)
+            # get all pure hyper/hyponyms, which are candidates to
+            # be the outcast
+            synsets_id = self._pure_hypernyms() | self._pure_hyponyms() 
+        else:
+            # use the nouns given by the client
+            synsets_id = self._validate_nouns(nouns)
         
-        synsets_ids = self._validate_nouns(nouns)
+        return self._outcast(synsets_id)
+        
+
+    def _outcast(self, synsets_id: set[int]):
         remoteness = dict()
         
-        for synset_id in synsets_ids:
+        for synset_id in synsets_id:
             remoteness[synset_id] = self._bfs(synset_id)
 
-        return max(remoteness, key= lambda i: remoteness[i])
+        max_dist = max(remoteness.values())
+
+        return set( k for k, v in remoteness.items() if v == max_dist )
     
 
     def _pure_hypernyms(self):
@@ -121,11 +130,11 @@ class Outcast:
                 if c in q or self._visited.get(c, False):
                     continue
 
-                q.append(c)
                 self._visited[c] = True
+                q.append(c)
                 dist_sum += current_dist
         
-            current_distance += 1
+            current_dist += 1
 
         return dist_sum
     
@@ -142,7 +151,7 @@ class TestsOutcastImplementation(unittest.TestCase):
         # --- SET UP --- #
         n = 10
         synsets = [ (id, {str(id)}) for id in range(n) ]
-        hypernyms = [(0, {})]
+        hypernyms = []
         wn = WordNet(synsets, hypernyms)
         oc = Outcast(wn)
 
@@ -256,7 +265,7 @@ class TestsOutcast(unittest.TestCase):
         # --- SET UP --- #
         n = 1
         synsets = [ (id, {str(id)}) for id in range(n) ]
-        hypernyms = [ (0, {}) ]
+        hypernyms = [  ]
         wn = WordNet(synsets, hypernyms)
         oc = Outcast(wn)
         
@@ -273,8 +282,8 @@ class TestsOutcast(unittest.TestCase):
             nouns.add(list(noun_set)[0])
             
         actual = oc.outcast(nouns)
-        target = {0, 1}
-        self.assertIn(actual, target)
+        target = {0}
+        self.assertEqual(actual, target)
     
 
     def test_001__outcast__of_two_synsets(self):
@@ -283,7 +292,6 @@ class TestsOutcast(unittest.TestCase):
         n = 2
         synsets = [ (id, {str(id)}) for id in range(n) ]
         hypernyms = [
-            (0,  {} ) ,
             (1, {0} )
         ]
         wn = WordNet(synsets, hypernyms)
@@ -293,7 +301,7 @@ class TestsOutcast(unittest.TestCase):
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
         target = {0, 1}
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
@@ -303,7 +311,7 @@ class TestsOutcast(unittest.TestCase):
 
         actual = oc.outcast(nouns)
         target = {0, 1}
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
     
 
     def test_002__outcast__of_three_synsets_in_a_sequence(self):
@@ -312,7 +320,6 @@ class TestsOutcast(unittest.TestCase):
         n = 3
         synsets = [ (id, {str(id)}) for id in range(n) ]
         hypernyms = [
-            ( 0, {}  ),
             ( 1, {0} ),
             ( 2, {1} ),
         ]
@@ -323,7 +330,7 @@ class TestsOutcast(unittest.TestCase):
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
         target = {0, 2}
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
@@ -344,7 +351,6 @@ class TestsOutcast(unittest.TestCase):
         n = 3
         synsets = [ (id, {str(id)}) for id in range(n) ]
         hypernyms = [
-            ( 0, {}  ),
             ( 1, {0} ),
             ( 2, {0} ),
         ]
@@ -355,7 +361,7 @@ class TestsOutcast(unittest.TestCase):
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
         target = {1, 2}
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
@@ -372,7 +378,7 @@ class TestsOutcast(unittest.TestCase):
         nouns = {'2', '1'}
         actual = oc.outcast(nouns)
         target = {1, 2}
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
 
 
     def test_004__outcast__one_specific_outcast(self):
@@ -381,7 +387,6 @@ class TestsOutcast(unittest.TestCase):
         n = 5
         synsets = [ (id, {str(id)}) for id in range(n) ]
         hypernyms = [
-            ( 0, {}  ),
             ( 1, {0} ),
             ( 2, {0} ),
             ( 3, {1} ),
@@ -415,7 +420,6 @@ class TestsOutcast(unittest.TestCase):
         n = 10
         synsets = [ (id, {str(id)}) for id in range(n) ]
         hypernyms = [
-            (0, {}     ),
             (1, {0}    ),
             (2, {0}    ),
             (3, {1, 5} ),
@@ -447,7 +451,7 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = [7, 8]
+        target = {7, 8}
         self.assertEqual(actual, target)
 
         

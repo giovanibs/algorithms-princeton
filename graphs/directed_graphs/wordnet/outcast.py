@@ -1,25 +1,22 @@
+import colored_traceback.auto
 from wordnet import WordNet
 from collections import deque
-from sap import SAP
+from typing import Iterable
 
 
 class Outcast:
 
     def __init__(self, wn: WordNet) -> None:
         self._wn = wn
-        self._visited: dict
-        self._dist_from_to: dict[int, dict[int, int]]
-        
-        #   _dist_from_to = {
-        #                   from: {
-        #                       { to_0: distance_0 },
-        #                       { to_1: distance_1 }
-        #                   }
-        #   }
-        
+        self._visited: dict = dict()
 
-    def outcast(self, nouns: iter[str]|None = None) -> list[int]:
+
+    def outcast(self, nouns: Iterable[str]|None = None) -> list[int]:
         """
+        Returns  a list containing synsets for which the total
+        distance to all other synsets is highest among the
+        provided nouns or every noun in the graph.
+
         To identify an outcast, compute the sum of the distances
         between each noun and every other one and return a noun
         (or nouns) for which the distance is maximum.
@@ -52,60 +49,47 @@ class Outcast:
             - iterate from the bottom enqueue each synset until you find
             the first hypernym;
 
-        3) Calculate the SAP from each candidate to every other synset.
-
-        4) Get the synset from canditates that have the largest distance.
+        3) Recursively call `outcast` with the candidates.
         """
-        
-        
-
-    def _bfs(self, q: deque, previous_dist: int = 0):
-        """
-        """
-
-        s = q.popleft()
-        self._dist_from_to[s] = { s: previous_dist }
-        self._visited[s] = True
-        
-        connected_synsets = self._wn._connected_to(s)
-
-        for cs in connected_synsets:
-            
-            if cs in q or self._visited.get(cs, False):
-                continue
-
-            q.append(cs)
-            self._visited[cs] = True
-
-            dist = previous_dist + 1
-            self._dist_from_to[s][cs] = dist
-            self._dist_from_to[cs] = {  cs: 0    ,  # initiate
-                                        s : dist }  # save reflexive dist
-            
-        
-        previous_dist += 1
-    
-
-    def _validate_nouns(self, nouns):
-        # ========== OLD ============
-        # if nouns is None:
-        #     return self._wn._synsets.keys()
-        
-        # synsets_ids = set()
-
-        # for noun in nouns:
-            
-        #     if not self._wn.is_noun(noun):
-        #         raise ValueError(f"{noun!r} is not in the WordNet.")
-            
-        #     synsets_ids.update(self._wn._id_of(noun, first = False))
-
-        # return synsets_ids
-        # ========== END OLD ============
         
         if nouns is None:
-            return self._wn._synsets.keys()
+            candidates = self._pure_hypernyms() | self._pure_hyponyms() 
+            return self.outcast(candidates)
         
+        synsets_ids = self._validate_nouns(nouns)
+        remoteness = dict()
+        
+        for synset_id in synsets_ids:
+            remoteness[synset_id] = self._bfs(synset_id)
+
+        return max(remoteness, key= lambda i: remoteness[i])
+    
+
+    def _pure_hypernyms(self):
+        """
+            Returns a set with synsets that has no hypernyms (a source).
+        """
+        synsets = set(self._wn._synsets)
+        hypernyms = set(self._wn._hypernyms.keys())
+        
+        return synsets.difference(hypernyms)
+
+
+    def _pure_hyponyms(self):
+        """
+            Returns a set with synsets that has no hyponyms (a leaf).
+        """
+        synsets = set(self._wn._synsets)
+        hyponyms = set(self._wn._hyponyms.keys())
+        
+        return synsets.difference(hyponyms)
+
+
+    def _validate_nouns(self, nouns):
+        """
+        Asserts that the given `nouns` are in the graph and
+        returns the id of their respective synset.
+        """
         synsets_ids = set()
 
         for noun in nouns:
@@ -118,11 +102,153 @@ class Outcast:
         return synsets_ids
     
 
+    def _bfs(self, source: int):
+        """
+        """
+        self._visited = {source: True}
+        
+        q = deque([source])
+        
+        dist_sum = 0
+        current_dist = 1
+        
+        while q:
+            s = q.popleft()
+            connected = self._wn._connected_to(s)
+
+            for c in connected:
+                
+                if c in q or self._visited.get(c, False):
+                    continue
+
+                q.append(c)
+                self._visited[c] = True
+                dist_sum += current_dist
+        
+            current_distance += 1
+
+        return dist_sum
+    
+
 # ------------------------------------------------------------------------------
 # --- UNIT TESTS
 # ------------------------------------------------------------------------------
 import unittest
 
+
+class TestsOutcastImplementation(unittest.TestCase):
+
+    def test_000_validate_nouns(self):
+        # --- SET UP --- #
+        n = 10
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = [(0, {})]
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+
+        nouns = {str(id) for id in range(n)}
+        expected = {id for id in range(n)}
+        ids = oc._validate_nouns(nouns)
+        self.assertSetEqual(ids, expected)
+    
+
+    def test_101_pure_hyper_and_hyponyms__single_vertex(self):
+        # --- SET UP --- #
+        n = 1
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = []
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+        
+        
+        # --- TEST --- #
+        pure_hyper = oc._pure_hypernyms()
+        pure_hypo  = oc._pure_hyponyms()
+        expected   = {0}
+        
+        self.assertSetEqual(pure_hyper, expected)
+        self.assertSetEqual(pure_hypo, expected)
+    
+
+    def test_102_pure_hyper_and_hyponyms__two_vertices(self):
+        # --- SET UP --- #
+        n = 2
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = [ (0, {1}) ]
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+        
+        
+        # --- TEST --- #
+        pure_hyper = oc._pure_hypernyms()
+        pure_hypo  = oc._pure_hyponyms()
+        expected_hyper = {1}
+        expected_hypo  = {0}
+        
+        self.assertSetEqual(pure_hyper, expected_hyper)
+        self.assertSetEqual(pure_hypo, expected_hypo)
+    
+
+    def test_103_pure_hyper_and_hyponyms__binary_tree(self):
+        # --- SET UP --- #
+        n = 3
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = [ (1, {0}), (2, {0}) ]
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+        
+        
+        # --- TEST --- #
+        pure_hyper = oc._pure_hypernyms()
+        pure_hypo  = oc._pure_hyponyms()
+        expected_hyper = {0}
+        expected_hypo  = {1, 2}
+        
+        self.assertSetEqual(pure_hyper, expected_hyper)
+        self.assertSetEqual(pure_hypo, expected_hypo)
+    
+
+    def test_104_pure_hyper_and_hyponyms__three_on_directed_path(self):
+        # --- SET UP --- #
+        n = 3
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = [ (0, {1}), (1, {2}) ]
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+        
+        
+        # --- TEST --- #
+        pure_hyper = oc._pure_hypernyms()
+        pure_hypo  = oc._pure_hyponyms()
+        expected_hyper = {2}
+        expected_hypo  = {0}
+        
+        self.assertSetEqual(pure_hyper, expected_hyper)
+        self.assertSetEqual(pure_hypo, expected_hypo)
+    
+
+    def test_105_pure_hyper_and_hyponyms__two_from_top_and_two_from_bot(self):
+        # --- SET UP --- #
+        n = 5
+        synsets = [ (id, {str(id)}) for id in range(n) ]
+        hypernyms = [
+            (2, {1, 0}  ),
+            (3, {2}     ),
+            (4, {2}     )
+        ]
+        wn = WordNet(synsets, hypernyms)
+        oc = Outcast(wn)
+        
+        
+        # --- TEST --- #
+        pure_hyper = oc._pure_hypernyms()
+        pure_hypo  = oc._pure_hyponyms()
+        expected_hyper = {0, 1}
+        expected_hypo  = {3, 4}
+        
+        self.assertSetEqual(pure_hyper, expected_hyper)
+        self.assertSetEqual(pure_hypo, expected_hypo)
+    
 
 class TestsOutcast(unittest.TestCase):
     def test_000__outcast__reflexive(self):
@@ -137,7 +263,7 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = 0
+        target = {0}
         self.assertEqual(actual, target)
     
         
@@ -147,7 +273,7 @@ class TestsOutcast(unittest.TestCase):
             nouns.add(list(noun_set)[0])
             
         actual = oc.outcast(nouns)
-        target = 0, 1
+        target = {0, 1}
         self.assertIn(actual, target)
     
 
@@ -166,7 +292,7 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = 0, 1
+        target = {0, 1}
         self.assertIn(actual, target)
 
         
@@ -176,7 +302,7 @@ class TestsOutcast(unittest.TestCase):
             nouns.add(list(noun_set)[0])
 
         actual = oc.outcast(nouns)
-        target = 0, 1
+        target = {0, 1}
         self.assertIn(actual, target)
     
 
@@ -196,19 +322,19 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = 0, 2
+        target = {0, 2}
         self.assertIn(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
         nouns = {'0', '1'}
         actual = oc.outcast(nouns)
-        target = 0
+        target = {0}
         self.assertEqual(actual, target)
     
         nouns = {'2', '1'}
         actual = oc.outcast(nouns)
-        target = 2
+        target = {2}
         self.assertEqual(actual, target)
     
 
@@ -228,24 +354,24 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = 1, 2
+        target = {1, 2}
         self.assertIn(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
         nouns = {'0', '1'}
         actual = oc.outcast(nouns)
-        target = 1
+        target = {1}
         self.assertEqual(actual, target)
 
         nouns = {'0', '2'}
         actual = oc.outcast(nouns)
-        target = 2
+        target = {2}
         self.assertEqual(actual, target)
     
         nouns = {'2', '1'}
         actual = oc.outcast(nouns)
-        target = 1, 2
+        target = {1, 2}
         self.assertIn(actual, target)
 
 
@@ -267,19 +393,19 @@ class TestsOutcast(unittest.TestCase):
         
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
-        target = 2
+        target = {2}
         self.assertEqual(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
         nouns = {'1', '4'}
         actual = oc.outcast(nouns)
-        target = 4
+        target = {4}
         self.assertEqual(actual, target)
     
         nouns = {'0', '1'}
         actual = oc.outcast(nouns)
-        target = 0
+        target = {0}
         self.assertEqual(actual, target)
 
 
@@ -322,26 +448,26 @@ class TestsOutcast(unittest.TestCase):
         # --- ASSERT BY ID --- #
         actual = oc.outcast()
         target = [7, 8]
-        self.assertIn(actual, target)
+        self.assertEqual(actual, target)
 
         
         # --- ASSERT BY NOUN --- #
         nouns = {'9', '4', '3'}
         actual = oc.outcast(nouns)
-        target = 4
+        target = {4}
         self.assertEqual(actual, target)
     
         nouns = {'0', '1', '2'}
         actual = oc.outcast(nouns)
-        target = 2
+        target = {2}
         self.assertEqual(actual, target)
         
         nouns = {'5', '6', '2'}
         actual = oc.outcast(nouns)
-        target = 6
+        target = {6}
         self.assertEqual(actual, target)
         
         nouns = {'7', '9'}
         actual = oc.outcast(nouns)
-        target = 7
+        target = {7}
         self.assertEqual(actual, target)
